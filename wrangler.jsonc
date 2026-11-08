@@ -1,0 +1,18 @@
+// Cloudflare Worker that serves site/ as static assets (no Worker script).
+// Deploy: npx wrangler@4 deploy
+{
+  "name": "zachxbt-boo",
+  "compatibility_date": "2026-11-06",
+  // keeps the workers.dev URL as a preview address
+  "workers_dev": true,
+  // Cloudflare creates the DNS record and certificate for each domain.
+  // admin.haunted.ong stays on the haunted-ong-mirror Worker.
+  "routes": [
+    { "pattern": "zachxbt.boo", "custom_domain": true },
+    { "pattern": "haunted.ong", "custom_domain": true },
+    { "pattern": "www.haunted.ong", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": "./site"
+  }
+}

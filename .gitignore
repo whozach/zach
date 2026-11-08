@@ -1,0 +1,11 @@
+# Only the live site and its Worker config go to GitHub.
+/*
+!/.gitignore
+!/wrangler.jsonc
+!/site/
+
+# Review captures and local tooling
+/site/screenshots/
+.claude/
+.wrangler/
+node_modules/
