@@ -103,6 +103,7 @@ html.no-gl main {
 
 .dot:focus-visible,
 .socials a:focus-visible,
+.socials button:focus-visible,
 .scroll-hint:focus-visible,
 .presence:focus-visible {
   outline: 2px solid rgba(255, 255, 255, 0.7);
@@ -228,12 +229,21 @@ html.no-gl main {
   gap: 22px;
 }
 
-.socials a {
+.socials a,
+.socials button {
   position: relative;
   color: #fff;
   display: grid;
   place-items: center;
   transition: transform 0.15s ease;
+}
+
+.socials button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
 }
 
 .socials svg {
@@ -245,7 +255,33 @@ html.no-gl main {
     drop-shadow(0 0 16px rgba(255, 255, 255, 0.45));
 }
 
-.socials a:hover { transform: translateY(-2px); }
+.socials a:hover,
+.socials button:hover { transform: translateY(-2px); }
+
+/* The username under a copy-only icon: on hover/focus, and after a click. */
+.social-tip {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translate(-50%, -4px);
+  padding: 4px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.socials button:hover .social-tip,
+.socials button:focus-visible .social-tip,
+.socials button.show-tip .social-tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
 
 /* ---------- about ---------- */
 

@@ -14,10 +14,13 @@ window.BOO_CONFIG = {
   // Leave the list empty to hide the row.
   skills: [],
 
-  // Glowing icons on the profile screen. icon: github, globe or x.
+  // Glowing icons on the profile screen. icon: github, discord, globe or x.
   // The first link is also where the about card's profile chip points.
+  // A link with `copy` instead of `url` copies that text on click and shows
+  // `label` on hover (Discord usernames have no profile URL).
   links: [
-    { icon: "github", name: "GitHub", url: "https://github.com/whozach" }
+    { icon: "github", name: "GitHub", url: "https://github.com/whozach" },
+    { icon: "discord", name: "Discord", label: "@1cwo", copy: "1cwo" }
   ],
 
   // Projects, newest first. id is the link anchor on /projects/ (#id), so keep it
@@ -37,6 +40,20 @@ window.BOO_CONFIG = {
         links: [
           { label: "Live site", url: "https://haunted.ong" },
           { label: "Source", url: "https://github.com/whozach/zach" }
+        ]
+      },
+      {
+        id: "isntrip",
+        title: "isnt.rip",
+        image: "/assets/projects/isntrip.jpg",
+        imageAlt: "isnt.rip landing page",
+        // Which part of the photo the short home-screen card shows.
+        imageFocus: "center 28%",
+        chips: ["Bio pages", "Short links"],
+        line: "Claim a short link, build your page.",
+        body: "A bio page host: claim a short isnt.rip handle and build a page with video backgrounds, music, effects, badges, custom layouts and honest view counts.",
+        links: [
+          { label: "Live site", url: "https://isnt.rip" }
         ]
       }
     ]

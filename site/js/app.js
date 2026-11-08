@@ -4,8 +4,44 @@ document.getElementById("avatar").alt = config.avatar.alt;
 document.getElementById("name").textContent = config.name;
 document.getElementById("bio").textContent = config.bio;
 
-document.getElementById("socials").append(...config.links.map((link) =>
-  el("a", { href: link.url, "aria-label": link.name, title: link.name, target: "_blank", rel: "noreferrer" }, icon(link.icon))));
+document.getElementById("socials").append(...config.links.map(socialLink));
+
+function socialLink(link) {
+  if (!link.copy) {
+    return el("a", { href: link.url, "aria-label": link.name, title: link.name, target: "_blank", rel: "noreferrer" }, icon(link.icon));
+  }
+  // Nothing to link to (a Discord username), so the icon copies it instead.
+  const tip = el("span", { class: "social-tip", role: "status" }, link.label);
+  const button = el("button", { type: "button", "aria-label": `${link.name} ${link.label}, copy username` }, icon(link.icon), tip);
+  let timer;
+  button.addEventListener("click", async () => {
+    tip.textContent = await copyText(link.copy) ? `copied ${link.label}` : link.label;
+    button.classList.add("show-tip");
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      button.classList.remove("show-tip");
+      tip.textContent = link.label;
+    }, 1600);
+  });
+  return button;
+}
+
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // In-app browsers often block the Clipboard API; the old way still works there.
+    const area = el("textarea", { readonly: true, "aria-hidden": "true", style: "position:fixed;top:0;opacity:0" }, text);
+    const focused = document.activeElement;
+    document.body.append(area);
+    area.select();
+    const copied = document.execCommand("copy");
+    area.remove();
+    focused?.focus({ preventScroll: true });
+    return copied;
+  }
+}
 
 const presence = document.getElementById("presence");
 presence.href = config.links[0].url;
@@ -27,7 +63,7 @@ config.projects.items.slice(0, config.projects.featured).forEach((item) => {
   const detailsId = `details-${item.id}`;
   projectList.append(el("article", { class: "project" },
     el("button", { class: "project-toggle", type: "button", "aria-expanded": "false", "aria-controls": detailsId },
-      el("img", { class: "project-photo", src: item.image, alt: "" }),
+      el("img", { class: "project-photo", src: item.image, alt: "", style: item.imageFocus && `object-position: ${item.imageFocus}` }),
       el("span", { class: "project-summary" },
         chips(item),
         el("span", { class: "project-copy" },
