@@ -23,25 +23,12 @@ window.BOO_CONFIG = {
     { icon: "discord", name: "Discord", label: "@1cwo", copy: "1cwo" }
   ],
 
-  // Projects, newest first. id is the link anchor on /projects/ (#id), so keep it
+  // Projects, in the order shown. id is the link anchor on /projects/ (#id), so keep it
   // stable once published. The home screen shows the first `featured` of them.
   projects: {
     title: "projects i work on",
     featured: 2,
     items: [
-      {
-        id: "zach",
-        title: "haunted.ong",
-        image: "/assets/projects/zach.jpg",
-        imageAlt: "haunted.ong profile screen",
-        chips: ["HTML", "CSS", "JavaScript"],
-        line: "The site you're on right now.",
-        body: "My biolink page, built with HTML, CSS and JS. No framework.",
-        links: [
-          { label: "Live site", url: "https://haunted.ong" },
-          { label: "Source", url: "https://github.com/whozach/zach" }
-        ]
-      },
       {
         id: "isntrip",
         title: "isnt.rip",
@@ -54,6 +41,29 @@ window.BOO_CONFIG = {
         body: "A bio page host: claim a short isnt.rip handle and build a page with video backgrounds, music, effects, badges, custom layouts and honest view counts.",
         links: [
           { label: "Live site", url: "https://isnt.rip" }
+        ]
+      },
+      {
+        // Not out yet, so no links.
+        id: "vrcam",
+        title: "VRCAM",
+        image: "/assets/projects/vrcam.jpg",
+        imageAlt: "VRCAM, in the works",
+        chips: ["In the works"],
+        line: "Still being built.",
+        body: "VRCAM isn't out yet. More here when it's ready."
+      },
+      {
+        id: "zach",
+        title: "haunted.ong",
+        image: "/assets/projects/zach.jpg",
+        imageAlt: "haunted.ong profile screen",
+        chips: ["HTML", "CSS", "JavaScript"],
+        line: "The site you're on right now.",
+        body: "My biolink page, built with HTML, CSS and JS. No framework.",
+        links: [
+          { label: "Live site", url: "https://haunted.ong" },
+          { label: "Source", url: "https://github.com/whozach/zach" }
         ]
       }
     ]

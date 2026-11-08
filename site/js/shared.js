@@ -34,6 +34,7 @@ function chips(item) {
 }
 
 function projectLinks(item, extraClass) {
+  if (!item.links?.length) return null;
   return el("div", { class: `project-links${extraClass ? ` ${extraClass}` : ""}` },
     item.links.map((link) => el("a", { href: link.url, target: "_blank", rel: "noreferrer" }, link.label)));
 }

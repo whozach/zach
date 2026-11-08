@@ -38,7 +38,7 @@ Everything visible lives in `config.js`:
 - Name, handle, bio and avatar.
 - `links`: the glowing icons, which can be `github`, `discord`, `globe` or `x`. The first link is also where the profile chip points. A link with `copy` instead of `url` (the Discord one) copies that text when clicked and shows its `label` on hover, since a Discord username has no profile URL.
 - `skills`: the pills under the about cards. Leave the list empty to hide them.
-- `projects.items`: newest first. Each project has a title, a photo in `assets/projects/` (800×500, greyscale), chips, a one-line summary, a longer body and link buttons. The home-screen card shows a short strip from the middle of the photo; set `imageFocus` (a CSS `object-position`, e.g. `"center 28%"`) to show a different part. The home page shows the first `projects.featured` of them. Each `id` becomes its link (`/projects/#zach`), so don't change an id once it's published.
+- `projects.items`: newest first. Each project has a title, a photo in `assets/projects/` (800×500, greyscale), chips, a one-line summary, a longer body and optional link buttons. The home-screen card shows a short strip from the middle of the photo; set `imageFocus` (a CSS `object-position`, e.g. `"center 28%"`) to show a different part. The home page shows the first `projects.featured` of them. Each `id` becomes its link (`/projects/#zach`), so don't change an id once it's published.
 
 ## Deploy
 
