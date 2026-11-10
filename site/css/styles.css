@@ -306,22 +306,13 @@ html.no-gl main {
 
 /* ---------- showcase card ---------- */
 
-.hero-row {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr;
-  gap: 14px;
-  width: min(600px, calc(100vw - 48px));
-  margin-top: 28px;
-}
-
-.hero-row .clock-card { min-height: 0; }
-
 .showcase {
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
   overflow: hidden;
+  margin-top: 14px;
   padding: 0 18px 16px;
   text-align: left;
   text-decoration: none;
@@ -343,7 +334,7 @@ html.no-gl main {
 .showcase-photo {
   display: block;
   width: calc(100% + 36px);
-  height: 96px;
+  height: 120px;
   margin: 0 -18px 10px;
   object-fit: cover;
   filter: grayscale(1) brightness(0.8);
@@ -382,12 +373,8 @@ html.no-gl main {
 }
 
 @media (max-width: 760px) {
-  .hero-row { grid-template-columns: 1fr; gap: 10px; margin-top: 22px; }
-  .showcase-photo { height: 72px; }
-  .hero-row .clock-card { padding: 12px 14px; }
+  .showcase-photo { height: 96px; }
 }
-
-.about-grid.about-grid-single { grid-template-columns: 1fr; }
 
 /* ---------- about ---------- */
 
