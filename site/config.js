@@ -45,6 +45,11 @@ window.BOO_CONFIG = {
         chips: ["In the works", "VRChat", "Linux"],
         line: "A desktop VRChat client for Linux.",
         body: "Crypto Client is my VRChat desktop client for Linux. It runs on NixOS, with VRChat going through Steam and Proton. It needs a license key, bought and managed here on haunted.ong.",
+        // Buy button, at the bottom of the entry. enabled: false shows a disabled "Buy · Coming soon" with no link.
+        // Set enabled: true to make it a normal link to url, labelled with label. Nothing else to change.
+        // disclaimer: the small grey line under the button (shown either way; "" hides it).
+        buy: { enabled: false, url: "/client/buy/", label: "Buy a key",
+               disclaimer: "haunted.ong is not responsible for how Crypto Client is used or by whom." },
         // Crypto Client only (rendered by /js/projects-client.js). To swap a preview for a real
         // screenshot, set its src to an 800x500 greyscale image in /assets/projects/ and give it an alt.
         screenshots: [

@@ -7,6 +7,46 @@
 }
 .post-copy .cc-extra { margin: 22px 0 0; }
 
+/* ---------- buy button ---------- */
+
+.cc-buy-row { margin: 18px 0 18px; }
+
+.cc-buy-note {
+  margin: 8px 0 0 !important;
+  color: #7a7a7a !important;
+  font-size: 11px !important;
+  line-height: 1.4 !important;
+}
+
+.cc-buy {
+  display: inline-block;
+  line-height: 1.2;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: #f4f4f4;
+  color: #0a0a0a;
+  font: inherit;
+  font-size: 13.5px;
+  text-decoration: none;
+  cursor: pointer;
+}
+a.cc-buy:hover { background: #fff; }
+a.cc-buy:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 3px;
+}
+
+.cc-buy.is-off,
+.cc-buy:disabled {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  color: #8d8d8d;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.cc-buy-soon { color: #6f6f6f; }
+
 /* ---------- screenshot previews ---------- */
 
 .cc-shots {

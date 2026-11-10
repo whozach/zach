@@ -41,6 +41,22 @@
       }));
   }
 
+  // Off: a disabled <button> with no href, so it can't be clicked, focused or followed.
+  // On: a plain link to item.buy.url.
+  function buyButton() {
+    const buy = item.buy;
+    if (!buy) return null;
+    const note = buy.disclaimer ? el("p", { class: "cc-buy-note" }, buy.disclaimer) : null;
+    if (buy.enabled === true && typeof buy.url === "string" && buy.url) {
+      return el("div", { class: "cc-buy-row" },
+        el("a", { class: "cc-buy", href: buy.url }, buy.label || "Buy"), note);
+    }
+    return el("div", { class: "cc-buy-row" },
+      el("button", { class: "cc-buy is-off", type: "button", disabled: true, "aria-disabled": "true" },
+        "Buy", el("span", { class: "cc-buy-sep", "aria-hidden": "true" }, " · "), el("span", { class: "cc-buy-soon" }, "Coming soon")),
+      note);
+  }
+
   function chevron() {
     const wrap = document.createElement("span");
     wrap.innerHTML = '<svg class="cc-cat-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>';
@@ -48,12 +64,13 @@
   }
 
   function build() {
-    return el("div", { class: "cc-extra" }, previews(), featureList());
+    // previews, then the feature list, then the buy button and its note at the very bottom
+    return el("div", { class: "cc-extra" }, previews(), featureList(), buyButton());
   }
 
-  // home: the card's details, after the description
+  // home: the card's details, after the description (the entry has no links row, so this is the bottom)
   const home = document.querySelector("#details-cryptoclient .project-details-inner");
-  if (home) home.querySelector("p").after(build());
+  if (home) home.append(build());
 
   // /projects/#cryptoclient
   const post = document.querySelector('[data-post="cryptoclient"] .post-copy');

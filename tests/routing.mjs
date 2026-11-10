@@ -175,8 +175,21 @@ async function main() {
     const mainFiles = [];
     const walk = (d) => { for (const n of readdirSync(d)) { const p = join(d, n), rel = relative(SITE, p); if (rel.split("/")[0] === "client" || rel.includes("screenshots") || rel.includes(".claude")) continue; if (statSync(p).isDirectory()) walk(p); else if (/\.(html|js|xml|txt|css|md)$/.test(n) || n === "_headers") mainFiles.push(p); } };
     walk(SITE);
-    const offenders = mainFiles.filter((p) => wallets.test(readFileSync(p, "utf8")) || /\/client\b/.test(readFileSync(p, "utf8")));
+    // One allowed mention: the Crypto Client buy switch in config.js (buy: { enabled, url: "/client/buy/", label }).
+    // Only that exact url value is blanked before the check; any other /client in any main file still fails.
+    const BUY_URL = /(\bbuy: \{ enabled: (?:true|false), url: )"\/client\/buy\/"/;
+    const mainText = (p) => { const t = readFileSync(p, "utf8"); return relative(SITE, p) === "config.js" ? t.replace(BUY_URL, '$1""') : t; };
+    const offenders = mainFiles.filter((p) => wallets.test(readFileSync(p, "utf8")) || /\/client\b/.test(mainText(p)));
     record(`store: none of the ${mainFiles.length} main site files has a wallet, QR or link to /client (sitemap included)`, offenders.length === 0, offenders.map((p) => relative(SITE, p)).join(" "));
+    {
+      const cfg = readFileSync(join(SITE, "config.js"), "utf8");
+      const m = cfg.match(/\bbuy: \{ enabled: (true|false), url: "([^"]*)"/g) || [];
+      record("store: config.js has exactly one buy switch, with url /client/buy/ (the only /client allowed on main files)",
+        m.length === 1 && /url: "\/client\/buy\/"/.test(m[0]) && (cfg.match(/\/client\b/g) || []).length === 1, m.join(" | "));
+      const pcJs = readFileSync(join(SITE, "js/projects-client.js"), "utf8");
+      record("store: projects-client.js has no /client of its own and only links when buy.enabled === true",
+        !/\/client\b/.test(pcJs) && /buy\.enabled === true/.test(pcJs) && (pcJs.match(/href:/g) || []).length === 1);
+    }
     const thirdParty = [buy, dash].concat(["store.js", "buy.js", "dashboard.js", "store.css"].map((f) => readFileSync(join(SITE, "client/assets", f), "utf8")))
       .some((t) => /(src|href)=["']https?:\/\//i.test(t) || /url\(["']?https?:/i.test(t) || /fetch\(["'`]https?:\/\/(?!api\.haunted\.ong)/.test(t));
     record("store: no third-party scripts, styles, fonts or analytics", !thirdParty);
