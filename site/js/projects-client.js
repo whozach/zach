@@ -19,20 +19,28 @@
           el("figcaption", { class: "cc-shot-label" }, "Preview, real screenshot coming"))));
   }
 
+  // a feature is { status: "in" | "soon", name, desc } (older ["in", name, desc] rows still work);
+  // anything that isn't exactly "in" shows as Coming soon
+  function feature(row) {
+    const [status, name, desc] = Array.isArray(row) ? row : [row.status, row.name, row.desc];
+    return { status: status === "in" ? "in" : "soon", name, desc };
+  }
+
   function featureList() {
     return el("div", { class: "cc-features" },
       el("h3", { class: "cc-features-title" }, "Features"),
       item.featuresNote ? el("p", { class: "cc-features-note" }, item.featuresNote) : null,
       item.features.map((group) => {
-        const built = group.items.filter(([status]) => status === "in").length;
-        const soon = group.items.length - built;
+        const rows = group.items.map(feature);
+        const built = rows.filter((row) => row.status === "in").length;
+        const soon = rows.length - built;
         const counts = [built && `${built} in the client`, soon && `${soon} coming soon`].filter(Boolean).join(", ");
         return el("details", { class: "cc-cat" },
           el("summary", { class: "cc-cat-summary" },
             el("span", { class: "cc-cat-name" }, group.category),
             el("span", { class: "cc-cat-count" }, counts),
             chevron()),
-          el("ul", { class: "cc-cat-list" }, group.items.map(([status, name, desc]) =>
+          el("ul", { class: "cc-cat-list" }, rows.map(({ status, name, desc }) =>
             el("li", { class: `cc-feature is-${status}` },
               el("span", { class: "cc-feature-text" },
                 el("span", { class: "cc-feature-name" }, name),
