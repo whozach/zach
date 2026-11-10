@@ -6,8 +6,10 @@
  */
 import {
   PLANS, coinAllowed, planExpiry, usdToUnits, formatUnits, combineQuotes, b58encode, b58decode,
-  associatedTokenAddress, matchBtc, matchEth, PRICE_SOURCES, SOL_RECIPIENT, USDC_SOL_MINT, BTC_RECIPIENT, ETH_RECIPIENT,
+  associatedTokenAddress, matchBtc, matchEth, PRICE_SOURCES, SOL_RECIPIENT, USDC_SOL_MINT, BTC_RECIPIENT, ETH_RECIPIENT, autoConfirm,
 } from "../worker/store.js";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 import { tokenTimes } from "../worker/index.js";
 
 let failed = 0, passed = 0;
@@ -49,6 +51,37 @@ const tok = (x) => ({ hash: "0x" + "b".repeat(64), blockNumber: "100", timeStamp
 check("ETH USDC: finalized -> paid with logIndex", matchEth(e, { finalized: 100, normal: [], internal: [], token: [tok({})] })?.index === 3);
 check("ETH USDC: not finalized -> seen", matchEth(e, { finalized: 99, normal: [], internal: [], token: [tok({})] })?.kind === "seen");
 check("ETH USDC: wrong contract / from us / late ignored", matchEth(e, { finalized: 200, normal: [], internal: [], token: [tok({ contractAddress: "0x" + "c".repeat(40) }), tok({ from: ETH_RECIPIENT }), tok({ timeStamp: "2000" })] }) === null);
+
+// ---- which chains are on (server) ----
+check("autoConfirm: no keys -> only Bitcoin", autoConfirm({}, "bitcoin") && !autoConfirm({}, "solana") && !autoConfirm({}, "ethereum"));
+check("autoConfirm: HELIUS_API_KEY or SOLANA_RPC_URL -> Solana; ETHERSCAN_API_KEY -> Ethereum", autoConfirm({ HELIUS_API_KEY: "k" }, "solana") && autoConfirm({ SOLANA_RPC_URL: "https://x" }, "solana") &&
+  !autoConfirm({ HELIUS_API_KEY: "k" }, "ethereum") && autoConfirm({ ETHERSCAN_API_KEY: "k" }, "ethereum") && !autoConfirm({ ETHERSCAN_API_KEY: "k" }, "solana"));
+
+// ---- buy page pick logic (site/client/assets/store.js, run in a sandbox) ----
+const win = {};
+runInNewContext(readFileSync(new URL("../site/client/assets/store.js", import.meta.url), "utf8"), { window: win });
+const pick = win.CCStore.pickState;
+const planList = [["30d", "30 days", "7.99"], ["90d", "90 days", "22.99"], ["365d", "365 days", "59.99"], ["lifetime", "Lifetime", "124.99"]].map(([id, label, usd]) => ({ id, label, usd }));
+const coinList = (on) => [["solana", "usdc", "USDC (Solana)"], ["solana", "sol", "SOL"], ["bitcoin", "btc", "Bitcoin"], ["ethereum", "eth", "ETH"], ["ethereum", "usdc", "USDC (Ethereum)"]]
+  .map(([chain, asset, label]) => ({ chain, asset, label, plans: chain === "solana" ? ["30d", "90d", "365d", "lifetime"] : ["30d", "90d", "365d"], auto_confirm: on.includes(chain) }));
+const cfgOff = { plans: planList, coins: coinList(["bitcoin"]), default_coin: { chain: "bitcoin", asset: "btc" } };
+const p0 = pick(cfgOff, "30d", null, false);
+check("page (no keys): default coin is Bitcoin, continue enabled", p0.coin === "bitcoin:btc" && p0.plan === "30d" && p0.canCreate);
+check("page (no keys): Solana + Ethereum coins disabled and marked off", p0.coins.filter((c) => !c.enabled).map((c) => c.key).join() === "solana:usdc,solana:sol,ethereum:eth,ethereum:usdc" && p0.coins.filter((c) => !c.on).length === 4);
+const life = p0.plans.find((p) => p.id === "lifetime");
+check("page (no keys): Lifetime unavailable with note 'Lifetime needs Solana, not on yet.'", !life.available && life.note === "Lifetime needs Solana, not on yet.", life.note);
+check("page (no keys): 30/90/365 available", p0.plans.filter((p) => p.available).map((p) => p.id).join() === "30d,90d,365d");
+const p1 = pick(cfgOff, "lifetime", "solana:usdc", false);
+check("page (no keys): a stale Lifetime / Solana pick falls back to 30d + Bitcoin", p1.plan === "30d" && p1.coin === "bitcoin:btc" && p1.canCreate);
+const p2 = pick(cfgOff, "90d", "ethereum:eth", false);
+check("page (no keys): clicking a disabled Ethereum coin can't select it", p2.coin === "bitcoin:btc" && p2.plan === "90d");
+const cfgOn = { plans: planList, coins: coinList(["bitcoin", "solana", "ethereum"]), default_coin: { chain: "solana", asset: "usdc" } };
+const p3 = pick(cfgOn, "lifetime", null, false);
+check("page (keys): Lifetime available, default Solana USDC, Bitcoin/ETH disabled for Lifetime", p3.plan === "lifetime" && p3.coin === "solana:usdc" && p3.coins.filter((c) => c.enabled).map((c) => c.key).join() === "solana:usdc,solana:sol");
+check("page (keys): Ethereum selectable for 30d", pick(cfgOn, "30d", "ethereum:eth", false).coin === "ethereum:eth");
+check("page: renew mode hides Lifetime", !pick(cfgOff, "30d", null, true).plans.some((p) => p.id === "lifetime"));
+const pNone = pick({ plans: planList, coins: coinList([]), default_coin: null }, "30d", null, false);
+check("page: nothing on -> continue disabled", !pNone.canCreate && pNone.coin === null);
 
 console.log(`\n${passed}/${passed + failed} store unit checks passed.`);
 if (failed) process.exit(1);

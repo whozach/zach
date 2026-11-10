@@ -47,6 +47,7 @@ const HTTP_BY_CODE = {
   device_mismatch: 409,
   forbidden: 403,
   payment_conflict: 409,
+  coin_not_available: 409,
   rate_limited: 429,
   reset_limit: 429,
   server_error: 500,

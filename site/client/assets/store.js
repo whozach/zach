@@ -80,5 +80,34 @@
     return (j && j.error && j.error.message) || "Something went wrong. Try again.";
   }
 
-  window.CCStore = { api: api, readHash: readHash, hashOf: hashOf, el: el, copyButton: copyButton, valueRow: valueRow, fmtDate: fmtDate, fmtLeft: fmtLeft, errText: errText };
+  // What the buy page may offer, from /store/config. A coin is only offered when the store
+  // checks its payments automatically (auto_confirm); a plan only when some offered coin takes it.
+  var CHAIN_NAMES = { solana: "Solana", ethereum: "Ethereum", bitcoin: "Bitcoin" };
+  function pickState(cfg, plan, coin, renew) {
+    var keyOf = function (c) { return c.chain + ":" + c.asset; };
+    var on = cfg.coins.filter(function (c) { return c.auto_confirm === true; });
+    var plans = cfg.plans.filter(function (p) { return !(renew && p.id === "lifetime"); }).map(function (p) {
+      var ok = on.some(function (c) { return c.plans.indexOf(p.id) >= 0; });
+      var note = "";
+      if (!ok) {
+        var chains = [];
+        cfg.coins.forEach(function (c) {
+          var n = CHAIN_NAMES[c.chain] || c.chain;
+          if (c.plans.indexOf(p.id) >= 0 && chains.indexOf(n) < 0) chains.push(n);
+        });
+        note = p.label + " needs " + (chains.join(" or ") || "a coin") + ", not on yet.";
+      }
+      return { id: p.id, label: p.label, usd: p.usd, available: ok, note: note };
+    });
+    var cur = plans.filter(function (p) { return p.id === plan && p.available; })[0] || plans.filter(function (p) { return p.available; })[0] || null;
+    var planId = cur ? cur.id : null;
+    var coins = cfg.coins.map(function (c) {
+      return { key: keyOf(c), label: c.label, on: c.auto_confirm === true, enabled: c.auto_confirm === true && !!planId && c.plans.indexOf(planId) >= 0 };
+    });
+    var pick = function (k) { return coins.filter(function (c) { return c.key === k && c.enabled; })[0]; };
+    var sel = pick(coin) || (cfg.default_coin && pick(keyOf(cfg.default_coin))) || coins.filter(function (c) { return c.enabled; })[0] || null;
+    return { plans: plans, coins: coins, plan: planId, coin: sel ? sel.key : null, canCreate: !!(planId && sel) };
+  }
+
+  window.CCStore = { api: api, readHash: readHash, hashOf: hashOf, el: el, copyButton: copyButton, valueRow: valueRow, fmtDate: fmtDate, fmtLeft: fmtLeft, errText: errText, pickState: pickState };
 })();

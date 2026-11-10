@@ -503,7 +503,10 @@ function handleConfig(env) {
     plans: Object.keys(PLANS).filter((p) => coinAllowed(p, c.chain, c.asset)),
     auto_confirm: autoConfirm(env, c.chain),
   }));
-  return jsonOk({ plans, coins, default_coin: { chain: "solana", asset: "usdc" }, order_ttl_seconds: ORDER_TTL });
+  // Default: Solana USDC when Solana checks are on, else the first coin that is on (Bitcoin).
+  const on = coins.filter((c) => c.auto_confirm);
+  const def = on.find((c) => c.chain === "solana" && c.asset === "usdc") || on[0] || null;
+  return jsonOk({ plans, coins, default_coin: def ? { chain: def.chain, asset: def.asset } : null, order_ttl_seconds: ORDER_TTL });
 }
 
 async function handleCreateOrder(request, env) {
@@ -521,6 +524,12 @@ async function handleCreateOrder(request, env) {
     return jsonError("bad_request", "Lifetime can only be paid on Solana (USDC or SOL).", { reason: "lifetime_solana_only" });
   }
   const coin = COINS[coinKey];
+  // No order (no address, no QR) for a coin whose payments can't be confirmed automatically yet.
+  // Switches on by itself once HELIUS_API_KEY / SOLANA_RPC_URL or ETHERSCAN_API_KEY exist.
+  // Admin fulfill of existing orders is unaffected.
+  if (!autoConfirm(env, chain)) {
+    return jsonError("coin_not_available", `${{ solana: "Solana", ethereum: "Ethereum" }[chain] || coin.label} payments aren't switched on yet. Pick another coin.`, { reason: "auto_confirm_off", chain, asset });
+  }
   const now = nowSec();
   const db = env.LICENSE_DB;
 

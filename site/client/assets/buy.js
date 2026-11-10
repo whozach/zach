@@ -4,7 +4,7 @@
   var S = window.CCStore, el = S.el;
   var $ = function (id) { return document.getElementById(id); };
   var POLL_MS = 6000;
-  var state = { config: null, plan: "30d", coin: "solana:usdc", order: null, claim: null, timer: null, tick: null, renew: null };
+  var state = { config: null, plan: "30d", coin: null, order: null, claim: null, timer: null, tick: null, renew: null };
 
   function showMessage(text) {
     var m = $("message");
@@ -16,32 +16,38 @@
 
   function renderPick() {
     var cfg = state.config;
+    var ps = S.pickState(cfg, state.plan, state.coin, !!state.renew);
+    state.plan = ps.plan; state.coin = ps.coin;
     var plans = $("plans"), coins = $("coins");
     plans.textContent = ""; coins.textContent = "";
-    cfg.plans.forEach(function (p) {
-      if (state.renew && p.id === "lifetime") return; // Lifetime has no renew
+    var notes = [];
+    ps.plans.forEach(function (p) {
       var b = el("button", { type: "button", class: "choice", "aria-pressed": String(p.id === state.plan) }, [
-        el("span", { text: p.label }), el("span", { class: "price", text: "$" + p.usd }),
+        el("span", { text: p.label }), el("span", { class: "price", text: p.available ? "$" + p.usd : "not on yet" }),
       ]);
-      b.addEventListener("click", function () { state.plan = p.id; fixCoin(); renderPick(); });
+      if (!p.available) { b.disabled = true; notes.push(p.note); }
+      b.addEventListener("click", function () { state.plan = p.id; renderPick(); });
       plans.appendChild(b);
     });
-    cfg.coins.forEach(function (c) {
-      var allowed = c.plans.indexOf(state.plan) >= 0;
-      var b = el("button", { type: "button", class: "choice", "aria-pressed": String(coinKey(c) === state.coin) }, [
-        el("span", { text: c.label }), el("span", { class: "price", text: c.auto_confirm ? "" : "not on yet" }),
+    ps.coins.forEach(function (c) {
+      var b = el("button", { type: "button", class: "choice", "aria-pressed": String(c.key === state.coin) }, [
+        el("span", { text: c.label }), el("span", { class: "price", text: c.on ? "" : "not on yet" }),
       ]);
-      if (!allowed) b.disabled = true;
-      b.addEventListener("click", function () { state.coin = coinKey(c); renderPick(); });
+      if (!c.enabled) b.disabled = true;
+      b.addEventListener("click", function () { state.coin = c.key; renderPick(); });
       coins.appendChild(b);
     });
+    var pn = $("planNote"); pn.textContent = notes.join(" "); pn.hidden = !notes.length;
     $("coinNote").hidden = state.plan !== "lifetime";
-    $("create").disabled = false;
+    $("create").disabled = !ps.canCreate;
+    if (!ps.canCreate) showMessage("Payments aren't switched on yet. Check back soon.");
   }
 
-  function fixCoin() {
-    var c = state.config.coins.filter(function (x) { return coinKey(x) === state.coin; })[0];
-    if (!c || c.plans.indexOf(state.plan) < 0) state.coin = "solana:usdc";
+  function loadConfig() {
+    return S.api("GET", "/config").then(function (j) {
+      if (!j.ok) { showMessage(S.errText(j)); return; }
+      state.config = j; renderPick();
+    });
   }
 
   function drawQr(text) {
@@ -132,7 +138,11 @@
     $("create").disabled = true; showMessage(null);
     S.api("POST", "/orders", body).then(function (j) {
       $("create").disabled = false;
-      if (!j.ok) { showMessage(S.errText(j)); return; }
+      if (!j.ok) {
+        showMessage(S.errText(j));
+        if (j.error && j.error.code === "coin_not_available") loadConfig().then(function () { showMessage(S.errText(j)); });
+        return;
+      }
       state.order = j.order; state.claim = j.claim_secret;
       history.replaceState(null, "", location.pathname + S.hashOf({ o: j.order.id, c: j.claim_secret }));
       renderOrder(j.order); startPolling();
@@ -160,10 +170,7 @@
       state.renew = { lic: h.renew, rt: h.rt };
       var rb = $("renewBanner"); rb.textContent = "Renewing an existing key. The time you buy is added to the time it has left."; rb.hidden = false;
     }
-    S.api("GET", "/config").then(function (j) {
-      if (!j.ok) { showMessage(S.errText(j)); return; }
-      state.config = j; fixCoin(); renderPick();
-    });
+    loadConfig();
   }
 
   init();

@@ -3,7 +3,8 @@
  * Store e2e (client-store-plan.md §10) against `wrangler dev --local`, with
  * every chain / price API mocked by tests/store-mock.mjs.
  *   A: api.haunted.ong with HELIUS_API_KEY + ETHERSCAN_API_KEY set (test values) -> confirmers on
- *   B: api.haunted.ong with no keys -> Solana/Ethereum confirmers gated off
+ *   B: api.haunted.ong with no keys -> Solana/Ethereum orders refused (coin_not_available)
+ *   C: api.haunted.ong with only HELIUS_API_KEY -> Solana on, Ethereum still refused
  * D1 rows are aged with `wrangler d1 execute --local` (expiry / reveal-window tests).
  * Never prints ADMIN_TOKEN, SIGNING_KEY_JWK or FP_PEPPER.
  */
@@ -68,8 +69,8 @@ function startDev(port, persist, vars) {
 }
 
 let persistA;
-async function sql(command) {
-  const out = await run("npx", ["--yes", "wrangler@4", "d1", "execute", "crypto-licenses", "--local", "--persist-to", persistA, "--json", "--command", command]);
+async function sql(command, persist = persistA) {
+  const out = await run("npx", ["--yes", "wrangler@4", "d1", "execute", "crypto-licenses", "--local", "--persist-to", persist, "--json", "--command", command]);
   const j = JSON.parse(out.slice(out.indexOf("[")));
   return j[0]?.results ?? [];
 }
@@ -134,10 +135,12 @@ async function main() {
   const S = mock.state;
   persistA = mkdtempSync(join(tmpdir(), "store-a-")); tmps.push(persistA);
   const persistB = mkdtempSync(join(tmpdir(), "store-b-")); tmps.push(persistB);
-  for (const p of [persistA, persistB]) await run("npx", ["--yes", "wrangler@4", "d1", "migrations", "apply", "crypto-licenses", "--local", "--persist-to", p]);
+  const persistC = mkdtempSync(join(tmpdir(), "store-c-")); tmps.push(persistC);
+  for (const p of [persistA, persistB, persistC]) await run("npx", ["--yes", "wrangler@4", "d1", "migrations", "apply", "crypto-licenses", "--local", "--persist-to", p]);
   const A = await startDev(PORT_A, persistA, { STORE_MOCK_UPSTREAM: M, HELIUS_API_KEY: "test-helius-not-real", ETHERSCAN_API_KEY: "test-etherscan-not-real" });
   const B = await startDev(PORT_B, persistB, { STORE_MOCK_UPSTREAM: M });
-  const a = mk(A), b = mk(B);
+  const C = await startDev(PORT_B + 1, persistC, { STORE_MOCK_UPSTREAM: M, HELIUS_API_KEY: "test-helius-not-real" });
+  const a = mk(A), b = mk(B), c3 = mk(C);
   const sweep = async (base = A) => { const r = await fetch(base + "/cdn-cgi/handler/scheduled?cron=*+*+*+*+*"); const t = await r.text(); if (r.status !== 200) throw new Error("scheduled handler: " + r.status + " " + t.slice(0, 200)); return r.status; };
   const poll = (o, claim, api = a) => api("GET", `/store/orders/${o}?claim=${encodeURIComponent(claim)}`);
   // sweep (cron path) then poll: a poll alone re-checks the chain at most every 10 s per order
@@ -499,26 +502,56 @@ async function main() {
     !JSON.stringify(li.json).includes("claim_secret_hash") && !/CC-/.test(JSON.stringify(li.json)));
   record("store pages API never sends cookies: no Set-Cookie on store routes", !cfg.h.get("set-cookie") && !dash.h.get("set-cookie"));
 
-  // ---------------- B: Solana/Ethereum confirmers gated off without keys ----------------
+  // ---------------- with keys (A): every coin is on ----------------
+  record("with keys: config says every coin auto-confirms; default coin Solana USDC", cfg.json.coins.every((c) => c.auto_confirm === true) && cfg.json.default_coin?.chain === "solana");
+  const onA = [];
+  for (const [ch, as] of [["solana", "usdc"], ["solana", "sol"], ["ethereum", "usdc"], ["ethereum", "eth"], ["bitcoin", "btc"]]) onA.push((await order("30d", ch, as)).status);
+  record("with keys: 30d orders on all 5 coins are created (201)", onA.every((x) => x === 201), onA.join(","));
+
+  // ---------------- B: no keys -> Solana/Ethereum refused, Bitcoin on ----------------
   const cfgB = await b("GET", "/store/config");
   const ac = Object.fromEntries(cfgB.json.coins.map((c) => [c.chain + ":" + c.asset, c.auto_confirm]));
-  record("no keys: config says Solana + Ethereum auto-confirm off, Bitcoin on", ac["solana:usdc"] === false && ac["ethereum:usdc"] === false && ac["bitcoin:btc"] === true, JSON.stringify(ac));
-  const bo1 = (await order("30d", "solana", "usdc", {}, b)).json;
+  record("no keys: config says Solana + Ethereum auto-confirm off, Bitcoin on", ac["solana:usdc"] === false && ac["solana:sol"] === false && ac["ethereum:usdc"] === false && ac["ethereum:eth"] === false && ac["bitcoin:btc"] === true, JSON.stringify(ac));
+  record("no keys: config default coin falls back to Bitcoin", cfgB.json.default_coin?.chain === "bitcoin" && cfgB.json.default_coin?.asset === "btc", JSON.stringify(cfgB.json.default_coin));
+  const ordersBefore = (await sql("SELECT COUNT(*) AS n FROM orders", persistB))[0].n;
+  const quotesBefore = S.log.filter((l) => /coinbase|kraken|mempool|etherscan/.test(l.host)).length;
+  for (const [ch, as] of [["solana", "usdc"], ["solana", "sol"], ["ethereum", "usdc"], ["ethereum", "eth"]]) {
+    const r = await order("30d", ch, as, {}, b);
+    record(`no keys: 30d + ${ch}/${as} refused -> 409 coin_not_available, no address/QR`, r.status === 409 && r.json?.error?.code === "coin_not_available" && r.json?.error?.reason === "auto_confirm_off" &&
+      !r.json?.order && !/payment_url|recipient|4nfyHLED|0x[0-9a-f]{40}/i.test(r.text || JSON.stringify(r.json)), `${r.status} ${r.json?.error?.code} ${r.json?.error?.message}`);
+  }
+  const lifeB = await order("lifetime", "solana", "usdc", {}, b);
+  record("no keys: lifetime + Solana refused (coin_not_available)", lifeB.status === 409 && lifeB.json?.error?.code === "coin_not_available");
+  const lifeBtcB = await order("lifetime", "bitcoin", "btc", {}, b);
+  record("no keys: lifetime + Bitcoin still refused as lifetime_solana_only", lifeBtcB.status === 400 && lifeBtcB.json?.error?.reason === "lifetime_solana_only");
+  record("no keys: refused orders write no row and fetch no price", (await sql("SELECT COUNT(*) AS n FROM orders", persistB))[0].n === ordersBefore &&
+    S.log.filter((l) => /coinbase|kraken|mempool|etherscan/.test(l.host)).length === quotesBefore);
+  const btcB = await order("30d", "bitcoin", "btc", {}, b);
+  record("no keys: 30d + Bitcoin order still created (201, auto_confirm true)", btcB.status === 201 && btcB.json?.order?.auto_confirm === true && /^bitcoin:/.test(btcB.json?.order?.payment_url));
+
+  // An order made before this fix (Solana, keys off) is never auto-issued, but admin fulfill still works.
+  const legacyRef = rnd58();
+  await sql(`INSERT INTO orders (id, claim_secret_hash, plan, chain, asset, usd_price_cents, expected_amount, amount_decimals, recipient, reference, status, expires_at, created_at)
+             VALUES ('ord_PREFXB0000000000', 'x', '30d', 'solana', 'usdc', 799, '7990777', 6, '${OUR_SOL}', '${legacyRef}', 'pending', ${now() + 900}, ${now()})`, persistB);
   const sigB = "SIGB" + rnd58(80);
-  S.sol.sigs[bo1.order.reference] = [{ signature: sigB, confirmationStatus: "finalized", err: null }];
-  S.sol.txs[sigB] = { finalized: usdcTx({ ref: bo1.order.reference, amount: bo1.order.expected_amount }) };
+  S.sol.sigs[legacyRef] = [{ signature: sigB, confirmationStatus: "finalized", err: null }];
+  S.sol.txs[sigB] = { finalized: usdcTx({ ref: legacyRef, amount: "7990777" }) };
   const rpcBefore = S.log.filter((l) => l.host === "mainnet.helius-rpc.com").length;
-  const pB = await poll(bo1.order.id, bo1.claim_secret, b);
   await sweep(B);
-  const pB2 = await poll(bo1.order.id, bo1.claim_secret, b);
-  record("no HELIUS key: order can be created but poll says not_configured and never auto-issues (no RPC call)",
-    bo1.order.auto_confirm === false && pB.json?.confirm === "not_configured" && pB2.json?.order?.status === "pending" && S.log.filter((l) => l.host === "mainnet.helius-rpc.com").length === rpcBefore);
-  const ethB = await order("30d", "ethereum", "eth", {}, b);
-  record("no ETHERSCAN key: ETH can't be quoted -> safe mode (no single-source price)", ethB.status === 503 && ethB.json?.error?.code === "safe_mode");
-  const ueB = (await order("30d", "ethereum", "usdc", {}, b)).json;
-  S.eth.chains[1].tokentx.push({ ...goodTok, hash: "0x" + hex(32), value: ueB.order.expected_amount, logIndex: "9" });
-  await sweep(B);
-  record("no ETHERSCAN key: USDC-on-Ethereum order never auto-issues", (await poll(ueB.order.id, ueB.claim_secret, b)).json?.order?.status === "pending");
+  const legacy = await b("GET", "/admin/orders/ord_PREFXB0000000000", { token: admin, origin: null });
+  record("no HELIUS key: an older Solana order is never auto-issued (no RPC call)", legacy.json?.order?.status === "pending" && S.log.filter((l) => l.host === "mainnet.helius-rpc.com").length === rpcBefore, legacy.json?.order?.status);
+  const manB = await b("POST", "/admin/orders/ord_PREFXB0000000000/fulfill", { token: admin, origin: null, body: { txid: sigB, index: 0, amount_paid: "7990777", note: "checked by hand" } });
+  record("no keys: admin fulfill still works -> manual + key", manB.status === 200 && manB.json?.order?.status === "manual" && /^CC-/.test(manB.json?.key || ""), `${manB.status} ${manB.json?.error?.code}`);
+
+  // ---------------- C: only HELIUS_API_KEY -> Solana switches on by itself, Ethereum still off ----------------
+  const cfgC = await c3("GET", "/store/config");
+  const acC = Object.fromEntries(cfgC.json.coins.map((c) => [c.chain + ":" + c.asset, c.auto_confirm]));
+  record("HELIUS only: Solana on, Ethereum off; default coin back to Solana USDC", acC["solana:usdc"] === true && acC["solana:sol"] === true && acC["ethereum:usdc"] === false && acC["ethereum:eth"] === false &&
+    cfgC.json.default_coin?.chain === "solana" && cfgC.json.default_coin?.asset === "usdc", JSON.stringify(acC));
+  const cSol = await order("30d", "solana", "usdc", {}, c3), cLife = await order("lifetime", "solana", "sol", {}, c3);
+  record("HELIUS only: Solana USDC 30d + SOL lifetime orders created", cSol.status === 201 && cLife.status === 201, `${cSol.status}/${cLife.status}`);
+  const cEth = await order("30d", "ethereum", "usdc", {}, c3), cEth2 = await order("30d", "ethereum", "eth", {}, c3);
+  record("HELIUS only: Ethereum USDC/ETH still refused (coin_not_available)", cEth.status === 409 && cEth.json?.error?.code === "coin_not_available" && cEth2.status === 409, `${cEth.status}/${cEth2.status}`);
 
   // no secrets / test keys in responses or logs we control
   const leak = JSON.stringify(S.log.filter((l) => l.host !== "api.etherscan.io" && l.host !== "mainnet.helius-rpc.com"));
