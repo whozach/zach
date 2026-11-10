@@ -54,6 +54,7 @@ if (showcased) {
   showcase.href = `/projects/#${showcased.id}`;
   showcase.setAttribute("aria-label", `Main project: ${showcased.title}. ${showcased.line}`);
   showcase.append(
+    el("img", { class: "showcase-photo", src: showcased.image, alt: "", width: 800, height: 500, style: showcased.imageFocus && `object-position: ${showcased.imageFocus}` }),
     el("span", { class: "showcase-top" },
       el("span", { class: "showcase-label" }, "main project"),
       chips(showcased)),

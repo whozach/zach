@@ -306,13 +306,23 @@ html.no-gl main {
 
 /* ---------- showcase card ---------- */
 
+.hero-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 14px;
+  width: min(600px, calc(100vw - 48px));
+  margin-top: 28px;
+}
+
+.hero-row .clock-card { min-height: 0; }
+
 .showcase {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: min(380px, calc(100vw - 48px));
-  margin-top: 28px;
-  padding: 16px 18px 18px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 18px 16px;
   text-align: left;
   text-decoration: none;
   transition: border-color 0.2s ease, transform 0.2s ease;
@@ -329,6 +339,19 @@ html.no-gl main {
   outline: 2px solid rgba(255, 255, 255, 0.7);
   outline-offset: 3px;
 }
+
+.showcase-photo {
+  display: block;
+  width: calc(100% + 36px);
+  height: 96px;
+  margin: 0 -18px 10px;
+  object-fit: cover;
+  filter: grayscale(1) brightness(0.8);
+  transition: filter 0.3s ease;
+}
+
+.showcase:hover .showcase-photo,
+.showcase:focus-visible .showcase-photo { filter: grayscale(1) brightness(1); }
 
 .showcase-top {
   display: flex;
@@ -357,6 +380,14 @@ html.no-gl main {
   font-size: 13.5px;
   line-height: 1.45;
 }
+
+@media (max-width: 760px) {
+  .hero-row { grid-template-columns: 1fr; gap: 10px; margin-top: 22px; }
+  .showcase-photo { height: 72px; }
+  .hero-row .clock-card { padding: 12px 14px; }
+}
+
+.about-grid.about-grid-single { grid-template-columns: 1fr; }
 
 /* ---------- about ---------- */
 
@@ -915,7 +946,7 @@ html.projects-page::-webkit-scrollbar-thumb {
 @media (prefers-reduced-motion: reduce) {
   @view-transition { navigation: none; }
   html { scroll-behavior: auto; }
-  .project-photo, .blog-post-photo { transition: none; }
+  .project-photo, .blog-post-photo, .showcase-photo { transition: none; }
   .scroll-hint svg { animation: none; }
   .project-details { transition: none; }
   .profile,
