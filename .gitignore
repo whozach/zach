@@ -9,3 +9,9 @@
 .claude/
 .wrangler/
 node_modules/
+.dev.vars
+
+# Crypto Client key API (secrets tool stays local)
+!/worker/
+!/migrations/
+!/tests/

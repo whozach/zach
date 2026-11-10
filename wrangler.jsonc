@@ -2,6 +2,7 @@
 // Deploy: npx wrangler@4 deploy
 {
   "name": "zachxbt-boo",
+  "main": "./worker/index.js",
   "compatibility_date": "2026-11-06",
   // keeps the workers.dev URL as a preview address
   "workers_dev": true,
@@ -15,6 +16,24 @@
   "assets": {
     "directory": "./site",
     // unknown paths get site/404.html with a real 404 status
-    "not_found_handling": "404-page"
-  }
+    "not_found_handling": "404-page",
+    "binding": "ASSETS",
+    // Only /api/* runs the Worker script; everything else stays static.
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "LICENSE_DB",
+      "database_name": "crypto-licenses",
+      "database_id": "7a0dbfed-5e3f-483f-a412-fec42647b741"
+    }
+  ],
+  // Workers Rate Limiting bindings for the license API (key-api-spec §6)
+  "ratelimits": [
+    { "name": "RL_PUBLIC", "namespace_id": "4101", "simple": { "limit": 20, "period": 60 } },
+    { "name": "RL_ADMIN", "namespace_id": "4102", "simple": { "limit": 60, "period": 60 } },
+    { "name": "RL_KEY", "namespace_id": "4103", "simple": { "limit": 5, "period": 60 } },
+    { "name": "RL_RESET", "namespace_id": "4104", "simple": { "limit": 3, "period": 60 } },
+    { "name": "RL_LICENSE", "namespace_id": "4105", "simple": { "limit": 10, "period": 60 } }
+  ]
 }
