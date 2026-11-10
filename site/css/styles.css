@@ -29,6 +29,7 @@ html {
 html::-webkit-scrollbar { width: 0; height: 0; }
 
 body {
+  position: relative;
   margin: 0;
   background: #070707;
   color: var(--text);
@@ -55,16 +56,16 @@ a { color: inherit; }
 /* smooth fade between the home page and /projects/ (skipped where unsupported) */
 @view-transition { navigation: auto; }
 
-/* faint, still film grain over the background */
+/* faint film grain that scrolls with the page */
 body::after {
   content: "";
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background: url("../assets/grain.png") repeat;
   background-size: 128px 128px;
-  opacity: 0.045;
+  opacity: 0.02;
 }
 
 main {
