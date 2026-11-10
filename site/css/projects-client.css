@@ -1,0 +1,195 @@
+/* Crypto Client project entry only: screenshot previews and the feature list.
+   Monotone, Rubik from /assets (inherited). Loaded after styles.css. */
+
+.cc-extra {
+  margin: 16px 18px 0;
+  interpolate-size: allow-keywords; /* lets the category panels animate to their natural height */
+}
+.post-copy .cc-extra { margin: 22px 0 0; }
+
+/* ---------- screenshot previews ---------- */
+
+.cc-shots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cc-shot {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 8 / 5;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0d0d0e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cc-shot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+}
+
+.cc-shot.is-preview {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.18);
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0 8px, transparent 8px 16px),
+    #0d0d0e;
+}
+
+/* a rough menu outline so the frame reads as "a screen goes here" */
+.cc-shot-frame {
+  position: absolute;
+  inset: 12% 10% 30%;
+  display: grid;
+  grid-template-columns: 30% 1fr;
+  grid-template-rows: 14% 1fr;
+  gap: 6%;
+  opacity: 0.55;
+}
+.cc-shot-frame > span {
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cc-shot-bar { grid-column: 1 / -1; }
+
+.cc-shot-label {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 8px;
+  color: #a3a3a3;
+  font-size: 11px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+/* ---------- feature list ---------- */
+
+.cc-features { margin-top: 18px; }
+
+.cc-features-title {
+  margin: 0 0 4px;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.cc-features-note {
+  margin: 0 0 10px !important;
+  color: #8d8d8d !important;
+  font-size: 12.5px !important;
+  line-height: 1.45;
+}
+
+.cc-cat {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.cc-cat:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+
+.cc-cat-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 2px;
+  list-style: none;
+  cursor: pointer;
+  color: #ececec;
+  font-size: 14.5px;
+  border-radius: 8px;
+}
+.cc-cat-summary::-webkit-details-marker { display: none; }
+.cc-cat-summary::marker { content: ""; }
+.cc-cat-summary:hover { color: #fff; }
+.cc-cat-summary:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.cc-cat-name { flex: 1 1 auto; min-width: 0; }
+
+.cc-cat-count {
+  flex: 0 1 auto;
+  color: #7a7a7a;
+  font-size: 12px;
+  text-align: right;
+}
+
+.cc-cat-chevron {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  color: #8d8d8d;
+}
+.cc-cat[open] .cc-cat-chevron { transform: rotate(180deg); }
+
+.cc-cat-list {
+  margin: 0;
+  padding: 0 2px 12px;
+  list-style: none;
+}
+
+.cc-feature {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+}
+.cc-feature + .cc-feature { border-top: 1px solid rgba(255, 255, 255, 0.04); }
+
+.cc-feature-text { min-width: 0; }
+
+.cc-feature-name {
+  display: block;
+  color: #e6e6e6;
+  font-size: 13.5px;
+}
+.cc-feature.is-soon .cc-feature-name { color: #b5b5b5; }
+
+.cc-feature-desc {
+  display: block;
+  margin-top: 2px;
+  color: #8a8a8a;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.cc-status {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.cc-feature.is-in .cc-status {
+  background: rgba(255, 255, 255, 0.9);
+  color: #0a0a0a;
+}
+.cc-feature.is-soon .cc-status {
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  color: #9a9a9a;
+}
+
+/* smooth open/close where the browser supports it; elsewhere it opens instantly */
+@media (prefers-reduced-motion: no-preference) {
+  .cc-cat::details-content {
+    block-size: 0;
+    overflow-y: clip;
+    transition: block-size 0.3s ease, content-visibility 0.3s allow-discrete;
+  }
+  .cc-cat[open]::details-content { block-size: auto; }
+  .cc-cat-chevron { transition: transform 0.3s ease; }
+}
+
+@media (max-width: 520px) {
+  .cc-shots { grid-template-columns: 1fr 1fr; }
+  .cc-shot:nth-child(3) { display: none; }
+  .cc-cat-count { display: none; }
+}
