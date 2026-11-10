@@ -308,10 +308,21 @@ if (!gl) {
       gl.uniform1f(uVh, vh);
       gl.uniform1f(uTime, reducedMotion ? 0 : now * 0.00009);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
-      requestAnimationFrame(frame);
+      if (!reducedMotion) requestAnimationFrame(frame);
     }
 
     window.addEventListener("resize", resize);
+    if (reducedMotion) {
+      // Still background: draw once, then only when scrolling or resizing changes it.
+      let queued = false;
+      const redraw = () => {
+        if (queued) return;
+        queued = true;
+        requestAnimationFrame((now) => { queued = false; frame(now); });
+      };
+      window.addEventListener("scroll", redraw, { passive: true });
+      window.addEventListener("resize", redraw);
+    }
     requestAnimationFrame(frame);
   }
 }

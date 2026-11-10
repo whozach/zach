@@ -1,0 +1,22 @@
+/assets/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
+/assets/*.woff2
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*.ttf
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/css/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/js/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/config.js
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/favicon.ico
+  Cache-Control: public, max-age=86400

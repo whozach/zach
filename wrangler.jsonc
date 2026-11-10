@@ -13,6 +13,8 @@
     { "pattern": "www.haunted.ong", "custom_domain": true }
   ],
   "assets": {
-    "directory": "./site"
+    "directory": "./site",
+    // unknown paths get site/404.html with a real 404 status
+    "not_found_handling": "404-page"
   }
 }

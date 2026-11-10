@@ -11,7 +11,8 @@
 
 @font-face {
   font-family: Rubik;
-  src: url("../assets/Rubik-Regular.ttf") format("truetype");
+  src: url("../assets/Rubik-Regular.woff2") format("woff2"),
+       url("../assets/Rubik-Regular.ttf") format("truetype");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -221,6 +222,11 @@ html.no-gl main {
   font-size: 30px;
   font-weight: 700;
   letter-spacing: -0.03em;
+  /* same white glow as the link icons below it */
+  text-shadow:
+    0 0 3px #fff,
+    0 0 8px rgba(255, 255, 255, 0.95),
+    0 0 16px rgba(255, 255, 255, 0.45);
 }
 
 .socials {
