@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * End-to-end tests against `wrangler dev --local`.
+ * End-to-end tests against `wrangler dev --local`, simulating the
+ * api.haunted.ong host with --local-upstream (request.url host = API_HOST).
  * Covers key-api-spec.md §11 (1–8) plus CRYPTO- prefix, bad checksum, and oversize body.
  * Never prints ADMIN_TOKEN, SIGNING_KEY_JWK, or FP_PEPPER.
  */
@@ -12,7 +13,8 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const BASE = process.env.BASE_URL || "http://127.0.0.1:8787";
-const API = BASE + "/api/license/v1";
+const API_HOST = process.env.API_HOST || "api.haunted.ong";
+const API = BASE + "/license/v1";
 const PORT = Number(new URL(BASE).port || 8787);
 const START_SERVER = process.env.START_SERVER !== "0";
 
@@ -143,6 +145,8 @@ function startWrangler() {
         "127.0.0.1",
         "--port",
         String(PORT),
+        "--local-upstream",
+        API_HOST,
         "--persist-to",
         ".wrangler/state",
       ],
@@ -401,19 +405,19 @@ async function main() {
     `http ${stale.status} code=${stale.json?.error?.code}`,
   );
 
-  // 5. Static page, unknown API path, /check
+  // 5. API host never serves the site, unknown API path, /check
   const home = await fetch(BASE + "/");
   const homeText = await home.text();
   const homeCt = home.headers.get("content-type") || "";
   record(
-    "§11.5 GET / still serves HTML",
-    home.status === 200 && /text\/html/i.test(homeCt) && /<html/i.test(homeText),
+    "§11.5 GET / on the API host is a JSON 404, not the site",
+    home.status === 404 && /json/i.test(homeCt) && !/<html/i.test(homeText),
     `http ${home.status} content-type=${homeCt}`,
   );
 
   const unknown = await req("GET", "/unknown");
   record(
-    "§11.5 /api/license/v1/unknown returns JSON 404",
+    "§11.5 /license/v1/unknown returns JSON 404",
     unknown.status === 404 &&
       unknown.json?.ok === false &&
       unknown.json?.error?.code === "not_found" &&
@@ -423,7 +427,7 @@ async function main() {
 
   const check = await req("POST", "/check", { body: { token: "x", device_fp: fpA } });
   record(
-    "§11.5 POST /api/license/v1/check returns JSON 404 (not an alias of /validate)",
+    "§11.5 POST /license/v1/check returns JSON 404 (not an alias of /validate)",
     check.status === 404 && check.json?.ok === false && check.json?.error?.code === "not_found",
     `http ${check.status} code=${check.json?.error?.code}`,
   );

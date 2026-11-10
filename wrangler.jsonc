@@ -11,15 +11,19 @@
   "routes": [
     { "pattern": "zachxbt.boo", "custom_domain": true },
     { "pattern": "haunted.ong", "custom_domain": true },
-    { "pattern": "www.haunted.ong", "custom_domain": true }
+    { "pattern": "www.haunted.ong", "custom_domain": true },
+    // Crypto Client license API (only answers on this host, at /license/v1/*)
+    { "pattern": "api.haunted.ong", "custom_domain": true }
   ],
   "assets": {
     "directory": "./site",
     // unknown paths get site/404.html with a real 404 status
     "not_found_handling": "404-page",
     "binding": "ASSETS",
-    // Only /api/* runs the Worker script; everything else stays static.
-    "run_worker_first": ["/api/*"]
+    // Every request runs worker/index.js first so it can route by host:
+    // api.haunted.ong -> license API at /license/v1/*; other hosts -> env.ASSETS
+    // unchanged (plus plain 404s for /api/* and the reserved /client/*).
+    "run_worker_first": true
   },
   "d1_databases": [
     {

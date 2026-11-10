@@ -1,14 +1,22 @@
 /**
- * Crypto Client license API — Worker main script for haunted.ong.
+ * Crypto Client license API — Worker main script for zachxbt-boo.
  * Implements every endpoint in key-api-spec.md. No npm dependencies.
  *
- * Routing: assets.run_worker_first = ["/api/*"] sends only /api/* here.
- * Paths outside /api/license/ fall through to env.ASSETS.fetch(request).
- * Unknown paths under the API (including /check) return a JSON 404.
+ * Routing (assets.run_worker_first = true, so every request lands here):
+ *  - Host api.haunted.ong: the API, at /license/v1/*. Every other path on
+ *    that host is a JSON 404. Site assets are never served there.
+ *  - Any other host (haunted.ong, www.haunted.ong, zachxbt.boo, workers.dev):
+ *    /api and /api/* -> the site's normal 404 page (same as any unknown path,
+ *    so the API isn't revealed); /client and /client/* -> the site's 404 page
+ *    plus X-Robots-Tag: noindex (reserved for key buys, payments, dashboard);
+ *    everything else -> env.ASSETS.fetch(request), untouched, so _headers,
+ *    caching, ETags and the 404 page behave exactly as before.
  */
 
-const API_PREFIX = "/api/license/";
-const API_BASE = "/api/license/v1";
+const API_HOST = "api.haunted.ong";
+const API_BASE = "/license/v1";
+// Missing-on-purpose asset path used to fetch the site's real 404 page.
+const NOT_FOUND_PROBE = "/__not_found__/";
 const BODY_LIMIT = 4096;
 const HEARTBEAT_SECONDS = 1800;
 const EXP_SECONDS = 6 * 60 * 60;
@@ -1164,20 +1172,62 @@ async function handleApi(request, env, path) {
   return jsonNotFound();
 }
 
+function hostOf(url) {
+  return url.hostname.toLowerCase().replace(/\.$/, "");
+}
+
+function underPrefix(path, prefix) {
+  return path === prefix || path.startsWith(prefix + "/");
+}
+
+// Answer exactly like an unknown path on the static site (GET/HEAD -> the
+// site's 404 page with a 404, other methods -> whatever the asset server says
+// for a missing file), so /api/* and /client/* don't stand out. If a file
+// ever exists under one of these prefixes in site/, it is still not served.
+async function siteNotFound(request, env, extraHeaders) {
+  if (!env.ASSETS || typeof env.ASSETS.fetch !== "function") {
+    return new Response("Not found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8", ...(extraHeaders || {}) } });
+  }
+  let res = await env.ASSETS.fetch(request);
+  if (res.status < 400) {
+    const u = new URL(request.url);
+    u.pathname = NOT_FOUND_PROBE;
+    u.search = "";
+    res = await env.ASSETS.fetch(new Request(u.toString(), { method: request.method, headers: request.headers }));
+    if (res.status < 400) res = new Response("Not found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+  }
+  if (!extraHeaders) return res;
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(extraHeaders)) out.headers.set(k, v);
+  return out;
+}
+
+async function handleApiHost(request, env, path) {
+  let res;
+  if (underPrefix(path, "/license")) res = await handleApi(request, env, path);
+  else res = jsonNotFound();
+  res = new Response(res.body, res);
+  res.headers.set("X-Robots-Tag", "noindex");
+  return res;
+}
+
 export default {
   async fetch(request, env) {
     try {
       const url = new URL(request.url);
+      const host = hostOf(url);
       const path = normalizePath(url.pathname);
 
-      const underLicense = path === "/api/license" || path.startsWith(API_PREFIX);
-      if (!underLicense) {
-        if (!env.ASSETS || typeof env.ASSETS.fetch !== "function") {
-          return new Response("Not found", { status: 404 });
-        }
-        return env.ASSETS.fetch(request);
+      if (host === API_HOST) return await handleApiHost(request, env, path);
+
+      // Site hosts. Note: test on the raw pathname too so /api/ and /client/ match.
+      if (underPrefix(path, "/api")) return await siteNotFound(request, env);
+      if (underPrefix(path, "/client")) return await siteNotFound(request, env, { "X-Robots-Tag": "noindex" });
+
+      if (!env.ASSETS || typeof env.ASSETS.fetch !== "function") {
+        return new Response("Not found", { status: 404 });
       }
-      return await handleApi(request, env, path);
+      return env.ASSETS.fetch(request);
     } catch (err) {
       // Do not leak internals, IPs, or secrets.
       return jsonError("server_error", "Internal server error.");
