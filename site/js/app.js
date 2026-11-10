@@ -46,6 +46,22 @@ async function copyText(text) {
   }
 }
 
+/* ---------- showcase card (the main project, under the name) ---------- */
+
+const showcase = document.getElementById("showcase");
+const showcased = config.projects.items.find((item) => item.id === config.showcase);
+if (showcased) {
+  showcase.href = `/projects/#${showcased.id}`;
+  showcase.setAttribute("aria-label", `Main project: ${showcased.title}. ${showcased.line}`);
+  showcase.append(
+    el("span", { class: "showcase-top" },
+      el("span", { class: "showcase-label" }, "main project"),
+      chips(showcased)),
+    el("span", { class: "showcase-title" }, showcased.title),
+    el("span", { class: "showcase-line" }, showcased.line));
+  showcase.hidden = false;
+}
+
 const presence = document.getElementById("presence");
 presence.href = config.links[0].url;
 presence.setAttribute("aria-label", `${config.name} on ${config.links[0].name}`);

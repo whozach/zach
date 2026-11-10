@@ -304,6 +304,60 @@ html.no-gl main {
   transform: translate(-50%, 0);
 }
 
+/* ---------- showcase card ---------- */
+
+.showcase {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: min(380px, calc(100vw - 48px));
+  margin-top: 28px;
+  padding: 16px 18px 18px;
+  text-align: left;
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.showcase[hidden] { display: none; }
+
+.showcase:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-1px);
+}
+
+.showcase:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 3px;
+}
+
+.showcase-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.showcase-label {
+  color: #9a9a9a;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.showcase .chips { justify-content: flex-end; }
+
+.showcase-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.showcase-line {
+  color: #a3a3a3;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
 /* ---------- about ---------- */
 
 .about {

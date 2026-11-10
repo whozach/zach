@@ -26,12 +26,26 @@ window.BOO_CONFIG = {
     { icon: "discord", name: "Discord", label: "@1cwo", copy: "1cwo" }
   ],
 
+  // The showcase card under the name on the profile screen: the id of one project below.
+  // It shows that project's chips, title and line, and links to it on /projects/.
+  // Leave "" to hide it.
+  showcase: "cryptoclient",
+
   // Projects, in the order shown. id is the link anchor on /projects/ (#id), so keep it
   // stable once published. The home screen shows the first `featured` of them.
   projects: {
     title: "projects i work on",
     featured: 2,
     items: [
+      {
+        id: "cryptoclient",
+        title: "Crypto Client",
+        image: "/assets/projects/cryptoclient.jpg",
+        imageAlt: "Crypto Client for VRChat",
+        chips: ["In the works", "VRChat", "Linux"],
+        line: "A desktop VRChat client for Linux.",
+        body: "A VRChat desktop client built for Linux, running through Steam and Proton."
+      },
       {
         id: "isntrip",
         title: "isnt.rip",
@@ -77,15 +91,6 @@ window.BOO_CONFIG = {
         chips: ["In the works", "Voice assistant", "NixOS"],
         line: "An always-on voice assistant for my Linux PC.",
         body: "Octo is a voice assistant that runs all the time on my NixOS and Hyprland setup."
-      },
-      {
-        id: "cryptoclient",
-        title: "Crypto Client",
-        image: "/assets/projects/cryptoclient.jpg",
-        imageAlt: "Crypto Client for VRChat",
-        chips: ["In the works", "VRChat", "Linux"],
-        line: "A desktop VRChat client for Linux.",
-        body: "A VRChat desktop client built for Linux, running through Steam and Proton."
       },
       {
         id: "ls5",
