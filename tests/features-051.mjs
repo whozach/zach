@@ -53,7 +53,10 @@ const extra = inSite.filter((s) => !listed.some((f) => f.key === s.key));
 const dups = site.filter((s, i) => site.findIndex((t) => t.key === s.key) !== i);
 rec("site: every 0.51 feature is In the client", missing.length === 0, missing.map((f) => f.name).join("; "));
 rec("site: nothing else is In the client", extra.length === 0, extra.map((f) => f.name).join("; "));
-rec(`site: ${inSite.length} In the client, ${site.length - inSite.length} Coming soon`, inSite.length === 115);
+const EXPECT_SOON = Number(process.env.EXPECT_SOON ?? 1);   // Ping is the only Coming soon item
+rec(`site: ${inSite.length} In the client, ${site.length - inSite.length} Coming soon (expected 115 / ${EXPECT_SOON})`,
+  inSite.length === 115 && site.length - inSite.length === EXPECT_SOON);
+rec("site: no Notifications row (it's the friend join alerts, already In the client)", !site.some((f) => /^notifications$/i.test(f.name)));
 rec("site: no duplicate feature names", dups.length === 0, dups.map((f) => f.name).join("; "));
 rec('site: every status is exactly "in" or "soon"', site.every((f) => f.status === "in" || f.status === "soon"));
 const featureLines = cfgText.split("\n").filter((l) => /^\s*\{ status: "/.test(l));
@@ -68,7 +71,7 @@ rec("config.js: each feature is a single line { status, name, desc }",
   const changed = cfgText.split("\n").filter((l, i) => l !== reverted.split("\n")[i]).length;
   const after = load(reverted);
   const f = after.find((x) => x.name === target);
-  rec(`revert: changing one line moves "${target}" to Coming soon (114 / ${site.length - 114})`,
+  rec(`revert: changing one line moves "${target}" to Coming soon (114 / ${after.length - 114})`,
     changed === 1 && f.status === "soon" && after.filter((x) => x.status === "in").length === 114);
 }
 

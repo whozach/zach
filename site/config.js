@@ -126,8 +126,7 @@ window.BOO_CONFIG = {
             { status: "in", name: "Mic indicator", desc: "Shows when your mic is open or muted" },
             { status: "in", name: "Push-to-talk badge", desc: "Shows while your talk key is held" },
             { status: "in", name: "Clean view", desc: "One key hides the HUD and overlays; your settings stay" },
-            { status: "soon", name: "Ping", desc: "Your own round-trip time" },
-            { status: "soon", name: "Notifications", desc: "Short notices for features turning on and off, and errors" }
+            { status: "soon", name: "Ping", desc: "Your own round-trip time" }
           ]},
           { category: "World", items: [
             { status: "in", name: "Disable fog", desc: "" },
