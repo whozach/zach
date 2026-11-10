@@ -22,7 +22,8 @@
     "binding": "ASSETS",
     // Every request runs worker/index.js first so it can route by host:
     // api.haunted.ong -> license API at /license/v1/*; other hosts -> env.ASSETS
-    // unchanged (plus plain 404s for /api/* and the reserved /client/*).
+    // unchanged (plus plain 404s for /api/* and /client/*, except the unlisted
+    // store pages /client/buy and /client/dashboard on haunted.ong + www).
     "run_worker_first": true
   },
   "d1_databases": [
@@ -38,6 +39,11 @@
     { "name": "RL_ADMIN", "namespace_id": "4102", "simple": { "limit": 60, "period": 60 } },
     { "name": "RL_KEY", "namespace_id": "4103", "simple": { "limit": 5, "period": 60 } },
     { "name": "RL_RESET", "namespace_id": "4104", "simple": { "limit": 3, "period": 60 } },
-    { "name": "RL_LICENSE", "namespace_id": "4105", "simple": { "limit": 10, "period": 60 } }
-  ]
+    { "name": "RL_LICENSE", "namespace_id": "4105", "simple": { "limit": 10, "period": 60 } },
+    // Crypto Client store (client-store-plan.md §4): order creation and polls, per IP
+    { "name": "RL_STORE_ORDER", "namespace_id": "4106", "simple": { "limit": 10, "period": 60 } },
+    { "name": "RL_STORE_POLL", "namespace_id": "4107", "simple": { "limit": 20, "period": 60 } }
+  ],
+  // Store sweep: confirm pending/seen orders, expire old ones, drop revealable keys after 7 days
+  "triggers": { "crons": ["* * * * *"] }
 }

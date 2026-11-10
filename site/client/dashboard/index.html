@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>crypto client dashboard — haunted.ong</title>
+  <meta name="theme-color" content="#070707">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="preload" href="/assets/Rubik-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/client/assets/store.css">
+</head>
+<body>
+  <main class="store">
+    <h1>crypto client</h1>
+    <p class="sub">Your key, plan and time left.</p>
+
+    <noscript><div class="warn">This page needs JavaScript.</div></noscript>
+    <div id="message" class="warn error" hidden role="alert"></div>
+
+    <section id="lookup" hidden>
+      <div class="card">
+        <h2>open with your key</h2>
+        <div class="field"><input type="text" id="keyInput" placeholder="CC-XXXXX-XXXXX-XXXXX-XXXXX" autocomplete="off" spellcheck="false" maxlength="40"></div>
+        <button class="btn wide" type="button" id="lookupBtn">open</button>
+      </div>
+    </section>
+
+    <section id="info" hidden>
+      <div class="card" id="keyCard" hidden>
+        <h2>your key</h2>
+        <div id="keyField"></div>
+        <p class="note" id="keyNote"></p>
+        <div class="row"><button class="btn ghost" type="button" id="ackBtn">I've copied it</button></div>
+      </div>
+      <div class="card" id="waitCard" hidden>
+        <p class="status" id="waitText">Payment not confirmed yet.</p>
+        <p class="note"><a id="backToBuy" href="/client/buy/">back to the order</a></p>
+      </div>
+      <div class="card" id="licCard" hidden>
+        <h2>license</h2>
+        <dl class="facts">
+          <dt>plan</dt><dd id="fPlan"></dd>
+          <dt>key</dt><dd id="fHint" class="mono"></dd>
+          <dt>expires</dt><dd id="fExp"></dd>
+          <dt>time left</dt><dd id="fLeft"></dd>
+          <dt>status</dt><dd id="fStatus"></dd>
+        </dl>
+      </div>
+      <a class="btn wide" id="renewBtn" href="/client/buy/" hidden>renew</a>
+      <p class="note" id="renewNote" hidden>Renewing adds the new plan's days to the time you have left.</p>
+    </section>
+
+    <p class="foot">unlisted page · <a href="/client/buy/">buy</a></p>
+  </main>
+  <script src="/client/assets/store.js"></script>
+  <script src="/client/assets/dashboard.js"></script>
+</body>
+</html>

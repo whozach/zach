@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>buy crypto client — haunted.ong</title>
+  <meta name="theme-color" content="#070707">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="preload" href="/assets/Rubik-Regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/client/assets/store.css">
+</head>
+<body>
+  <main class="store">
+    <h1>crypto client</h1>
+    <p class="sub">Buy a key with crypto. The key shows up here once the payment confirms.</p>
+
+    <noscript><div class="warn">This page needs JavaScript to create an order and check the payment.</div></noscript>
+
+    <div id="renewBanner" class="warn" hidden></div>
+    <div id="message" class="warn error" hidden role="alert"></div>
+
+    <section id="pick">
+      <div class="card">
+        <h2>plan</h2>
+        <div class="choices" id="plans"></div>
+      </div>
+      <div class="card">
+        <h2>pay with</h2>
+        <div class="choices" id="coins"></div>
+        <p class="note" id="coinNote">Lifetime can only be paid on Solana (USDC or SOL).</p>
+      </div>
+      <button class="btn wide" type="button" id="create" disabled>continue</button>
+      <p class="note">You get an exact amount to send. It's held for 15 minutes.</p>
+    </section>
+
+    <section id="pay" hidden>
+      <div class="card">
+        <p class="status" id="payStatus">Waiting for payment</p>
+        <p class="note" id="countdown"></p>
+      </div>
+      <div id="notConfigured" class="warn" hidden>Automatic payment checks for this coin aren't switched on yet. Don't send funds for this order yet.</div>
+      <div class="card" id="payCard">
+        <svg class="qr" id="qr" role="img" aria-label="Payment QR code"></svg>
+        <div id="payFields"></div>
+        <p class="note" id="payNote"></p>
+      </div>
+      <div class="row">
+        <button class="btn ghost" type="button" id="startOver" hidden>start over</button>
+      </div>
+      <p class="note">Keep this page's address if you close the tab: it brings this order back. It contains a private claim code, so don't share it.</p>
+    </section>
+
+    <p class="foot">unlisted page · <a href="/client/dashboard/">dashboard</a></p>
+  </main>
+  <script src="/client/assets/qrcodegen.js"></script>
+  <script src="/client/assets/store.js"></script>
+  <script src="/client/assets/buy.js"></script>
+</body>
+</html>

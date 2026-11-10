@@ -5,7 +5,10 @@
  * way a real custom domain does. Checks:
  *  - api.haunted.ong: API at /license/v1/*, everything else a JSON 404, never site assets
  *  - haunted.ong, www.haunted.ong, zachxbt.boo: /api/* is the site's normal 404 page,
- *    /client/* is a noindex 404, every site file is served byte-for-byte with its _headers
+ *    every site file is served byte-for-byte with its _headers
+ *  - store pages: /client/buy/ and /client/dashboard/ (+ their assets) only on haunted.ong
+ *    and www, with noindex + CSP; every other /client/* path, and all of /client/* on
+ *    zachxbt.boo, is a noindex 404; main pages carry no wallet / QR / store link
  *  - optional BASELINE_DIR=<old checkout>: every site path matches the old Worker exactly
  * Never reads or prints secrets.
  */
@@ -70,6 +73,7 @@ function siteFiles() {
       const top = rel.split("/")[0];
       if (ignore.includes(top) || ignore.includes(rel) || rel.split("/").includes(".claude")) continue;
       if (rel === ".assetsignore" || rel === "_headers") continue;
+      if (top === "client") continue; // store files are checked separately (host-limited)
       if (rel.endsWith(".html")) continue; // html is checked via its pretty URL (/, /projects/, 404)
       if (statSync(p).isDirectory()) walk(p); else out.push("/" + rel);
     }
@@ -128,15 +132,56 @@ async function main() {
         : r.status === postNf.status && r.body.equals(postNf.body) && ct(r) === ct(postNf) && !r.h.get("x-robots-tag");
       record(`${host}: ${m} ${p} answers like any unknown site path (no API hint)`, ok, `${r.status} ${ct(r)}`);
     }
-    for (const p of ["/client", "/client/", "/client/dashboard", "/client/buy?x=1"]) {
+    const storeHost = host !== "zachxbt.boo";
+    const nf404 = ["/client", "/client/", "/client/other", "/client/buy/x", "/client/buyx", "/client/dashboardx", "/client/assets/nope.js", "/client/assets/", "/client/buy/index.htm"];
+    if (!storeHost) nf404.push("/client/buy/", "/client/buy", "/client/dashboard/", "/client/assets/store.js", "/client/assets/qrcodegen.js");
+    for (const p of nf404) {
       const r = await get(b, p);
       record(`${host}: GET ${p} is a noindex 404`, r.status === 404 && /noindex/.test(r.h.get("x-robots-tag") || "") && r.body.equals(nfFile), `${r.status} x-robots-tag=${r.h.get("x-robots-tag")}`);
+    }
+    if (storeHost) {
+      for (const page of ["buy", "dashboard"]) {
+        const file = readFileSync(join(SITE, "client", page, "index.html"));
+        const r = await get(b, `/client/${page}/`);
+        record(`${host}: GET /client/${page}/ serves the store page with noindex (header + meta), CSP, no-referrer`,
+          r.status === 200 && r.body.equals(file) && /noindex/.test(r.h.get("x-robots-tag") || "") && /<meta name="robots" content="noindex/.test(r.text) &&
+          /connect-src https:\/\/api\.haunted\.ong/.test(r.h.get("content-security-policy") || "") && r.h.get("referrer-policy") === "no-referrer" && r.h.get("x-frame-options") === "DENY",
+          `${r.status} xrt=${r.h.get("x-robots-tag")}`);
+        for (const alt of [`/client/${page}`, `/client/${page}/index.html`]) {
+          const x = await get(b, alt);
+          record(`${host}: GET ${alt} redirects to /client/${page}/ (noindex)`, (x.status === 307 || x.status === 308) && new URL(x.h.get("location"), "http://h").pathname === `/client/${page}/` && /noindex/.test(x.h.get("x-robots-tag") || ""), `${x.status} ${x.h.get("location")}`);
+        }
+        const post = await get(b, `/client/${page}/`, { method: "POST", headers: { "content-type": "application/json" }, body: "junk" });
+        record(`${host}: POST /client/${page}/ answers like an unknown path (+noindex)`, post.status === postNf.status && post.body.equals(postNf.body) && /noindex/.test(post.h.get("x-robots-tag") || ""), `${post.status}`);
+      }
+      for (const f of ["store.css", "store.js", "buy.js", "dashboard.js", "qrcodegen.js"]) {
+        const r = await get(b, `/client/assets/${f}`);
+        record(`${host}: /client/assets/${f} served byte-for-byte with noindex`, r.status === 200 && r.body.equals(readFileSync(join(SITE, "client/assets", f))) && /noindex/.test(r.h.get("x-robots-tag") || ""), `${r.status}`);
+      }
+      const head = await get(b, "/client/buy/", { method: "HEAD" });
+      record(`${host}: HEAD /client/buy/ is 200 with noindex`, head.status === 200 && /noindex/.test(head.h.get("x-robots-tag") || ""), `${head.status}`);
     }
     const lic = await get(b, "/license/v1/validate", { method: "POST", headers: { "content-type": "application/json" }, body: "junk" });
     record(`${host}: /license/v1/* is not the API here (same as unknown path)`, lic.status === postNf.status && !/json/.test(ct(lic)) && lic.body.equals(postNf.body), `${lic.status}`);
     const licG = await get(b, "/license/v1/check");
     record(`${host}: GET /license/v1/check is the site 404`, licG.status === 404 && licG.body.equals(nfFile), `${licG.status}`);
   }
+  // store pages: only /client/buy has a QR; nothing main links to the store; not in the sitemap
+  {
+    const buy = readFileSync(join(SITE, "client/buy/index.html"), "utf8"), dash = readFileSync(join(SITE, "client/dashboard/index.html"), "utf8");
+    const dashJs = readFileSync(join(SITE, "client/assets/dashboard.js"), "utf8");
+    const wallets = /4nfyHLEDszwxTgxUAz1B5t8U5ZagXxrkg59wuwrgkMrA|0xd7ee3e4725967b353ba60334cf14679ed2f7df5e|bc1qnhxzzgv7wg8cfkhmuwydgrgzmfycn67cmccfse|qrcodegen|solana:|bitcoin:|ethereum:/i;
+    record("store: QR library only on /client/buy; dashboard has no QR, wallet or pay address", /qrcodegen\.js/.test(buy) && !wallets.test(dash) && !wallets.test(dashJs));
+    const mainFiles = [];
+    const walk = (d) => { for (const n of readdirSync(d)) { const p = join(d, n), rel = relative(SITE, p); if (rel.split("/")[0] === "client" || rel.includes("screenshots") || rel.includes(".claude")) continue; if (statSync(p).isDirectory()) walk(p); else if (/\.(html|js|xml|txt|css|md)$/.test(n) || n === "_headers") mainFiles.push(p); } };
+    walk(SITE);
+    const offenders = mainFiles.filter((p) => wallets.test(readFileSync(p, "utf8")) || /\/client\b/.test(readFileSync(p, "utf8")));
+    record(`store: none of the ${mainFiles.length} main site files has a wallet, QR or link to /client (sitemap included)`, offenders.length === 0, offenders.map((p) => relative(SITE, p)).join(" "));
+    const thirdParty = [buy, dash].concat(["store.js", "buy.js", "dashboard.js", "store.css"].map((f) => readFileSync(join(SITE, "client/assets", f), "utf8")))
+      .some((t) => /(src|href)=["']https?:\/\//i.test(t) || /url\(["']?https?:/i.test(t) || /fetch\(["'`]https?:\/\/(?!api\.haunted\.ong)/.test(t));
+    record("store: no third-party scripts, styles, fonts or analytics", !thirdParty);
+  }
+
   // every site file on every site host
   let bad = [];
   for (const host of SITE_HOSTS) for (const f of files) {
@@ -147,7 +192,7 @@ async function main() {
 
   // ---- baseline comparison (old Worker, haunted.ong) ----
   if (baseline) {
-    const paths = ["/", "/projects", "/projects/", "/index.html", "/projects/index.html", "/nope-xyz", "/404.html", "/client", "/root", ...files];
+    const paths = ["/", "/projects", "/projects/", "/index.html", "/projects/index.html", "/nope-xyz", "/404.html", "/client", "/client/", "/client/other", "/client/assets/nope.js", "/root", ...files];
     // ETag values aren't compared: wrangler dev derives them per checkout (two
     // copies of the same old code differ too). Production hashes file content.
     const keys = ["content-type", "cache-control", "location", "x-robots-tag", "content-encoding"];
@@ -157,10 +202,11 @@ async function main() {
       const oo = [o.status, sha(o.body), !!o.h.get("etag"), ...keys.map((k) => o.h.get(k))].join("|");
       const nn = [n.status, sha(n.body), !!n.h.get("etag"), ...keys.map((k) => n.h.get(k))].join("|");
       // /client is the one intended change: same answer, plus X-Robots-Tag: noindex
-      const same = p === "/client"
-        ? o.h.get("x-robots-tag") === null && n.h.get("x-robots-tag") === "noindex" &&
-          oo.replace(/\|noindex\|/, "||") === nn.replace(/\|noindex\|/, "||")
-        : nn === oo;
+      // /client gained X-Robots-Tag: noindex in the api.haunted.ong move; against a
+      // pre-move baseline that's the one allowed difference. Against the move
+      // version (the live one before the store) everything must be identical.
+      const same = nn === oo || (p.startsWith("/client") && o.h.get("x-robots-tag") === null && n.h.get("x-robots-tag") === "noindex" &&
+          oo.replace(/\|noindex\|/, "||") === nn.replace(/\|noindex\|/, "||"));
       if (!same) diffs.push(`${method} ${p}\n    old ${oo}\n    new ${nn}`);
     }
     record(`baseline: ${paths.length * 3} GET/HEAD/POST site responses match the old Worker (status, body, headers)`, diffs.length === 0, diffs.slice(0, 3).join("\n"));

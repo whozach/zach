@@ -13,7 +13,12 @@
  *    caching, ETags and the 404 page behave exactly as before.
  */
 
+import { handleStoreRoute, handleAdminOrdersRoute, isStorePath, storeSweep, planExpiry, STORE_CLIENT_FILES } from "./store.js";
+
 const API_HOST = "api.haunted.ong";
+// Hosts that serve the unlisted store pages (/client/buy, /client/dashboard).
+// zachxbt.boo and workers.dev keep the plain noindex 404 for all of /client/*.
+const STORE_PAGE_HOSTS = new Set(["haunted.ong", "www.haunted.ong"]);
 const API_BASE = "/license/v1";
 // Missing-on-purpose asset path used to fetch the site's real 404 page.
 const NOT_FOUND_PROBE = "/__not_found__/";
@@ -40,9 +45,13 @@ const HTTP_BY_CODE = {
   activation_released: 403,
   device_limit: 409,
   device_mismatch: 409,
+  forbidden: 403,
+  payment_conflict: 409,
   rate_limited: 429,
   reset_limit: 429,
   server_error: 500,
+  safe_mode: 503,
+  not_configured: 503,
 };
 
 const LIC_ID_RE = /^lic_[0-9A-HJKMNP-TV-Z]{16}$/;
@@ -55,21 +64,21 @@ const DEVICE_FP_RE = /^[0-9a-f]{64}$/;
 const te = new TextEncoder();
 const td = new TextDecoder();
 
-function toHex(buf) {
+export function toHex(buf) {
   const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   let out = "";
   for (let i = 0; i < u8.length; i++) out += u8[i].toString(16).padStart(2, "0");
   return out;
 }
 
-function b64urlEncode(buf) {
+export function b64urlEncode(buf) {
   const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
   let bin = "";
   for (let i = 0; i < u8.length; i++) bin += String.fromCharCode(u8[i]);
   return btoa(bin).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
 }
 
-function b64urlDecode(s) {
+export function b64urlDecode(s) {
   if (typeof s !== "string" || !s) throw new Error("invalid b64url");
   const pad = "=".repeat((4 - (s.length % 4)) % 4);
   const b = atob(s.replaceAll("-", "+").replaceAll("_", "/") + pad);
@@ -78,7 +87,7 @@ function b64urlDecode(s) {
   return out;
 }
 
-function bytesEqual(a, b) {
+export function bytesEqual(a, b) {
   const ua = a instanceof Uint8Array ? a : new Uint8Array(a);
   const ub = b instanceof Uint8Array ? b : new Uint8Array(b);
   if (ua.byteLength !== ub.byteLength) return false;
@@ -91,16 +100,16 @@ function bytesEqual(a, b) {
   return diff === 0;
 }
 
-async function sha256Bytes(data) {
+export async function sha256Bytes(data) {
   const raw = typeof data === "string" ? te.encode(data) : data;
   return new Uint8Array(await crypto.subtle.digest("SHA-256", raw));
 }
 
-async function sha256Hex(data) {
+export async function sha256Hex(data) {
   return toHex(await sha256Bytes(data));
 }
 
-function parsePepper(raw) {
+export function parsePepper(raw) {
   if (!raw || typeof raw !== "string") throw new Error("FP_PEPPER missing");
   const trimmed = raw.trim();
   if (/^[0-9a-fA-F]{64}$/.test(trimmed)) {
@@ -123,18 +132,18 @@ async function hmacSha256Hex(pepperBytes, message) {
   return toHex(mac);
 }
 
-function randomCrockford(n) {
+export function randomCrockford(n) {
   const out = new Array(n);
   const buf = crypto.getRandomValues(new Uint8Array(n));
   for (let i = 0; i < n; i++) out[i] = CROCKFORD[buf[i] & 31];
   return out.join("");
 }
 
-function newId(prefix) {
+export function newId(prefix) {
   return prefix + randomCrockford(16);
 }
 
-function nowSec() {
+export function nowSec() {
   return Math.floor(Date.now() / 1000);
 }
 
@@ -220,13 +229,29 @@ export function serializePayload(p) {
   });
 }
 
-export function tokenTimes(iat) {
-  return { iat, exp: iat + EXP_SECONDS, grace: iat + GRACE_SECONDS };
+/**
+ * Token lifetimes. exp = iat+6h and grace = iat+24h, both capped at the key's
+ * own expiry (lexp) when it has one, so a token can never outlive its key.
+ * Throws a key_expired error if lexp is already at or before iat.
+ */
+export function tokenTimes(iat, lexp = null) {
+  let exp = iat + EXP_SECONDS;
+  let grace = iat + GRACE_SECONDS;
+  if (lexp != null) {
+    if (!Number.isFinite(lexp) || lexp <= iat) {
+      const err = new Error("key_expired");
+      err.code = "key_expired";
+      throw err;
+    }
+    exp = Math.min(exp, lexp);
+    grace = Math.min(grace, lexp);
+  }
+  return { iat, exp, grace };
 }
 
 export async function signToken(env, claims) {
   const iat = claims.iat ?? nowSec();
-  const times = tokenTimes(iat);
+  const times = tokenTimes(iat, claims.lexp ?? null);
   const payload = {
     v: 1,
     lic: claims.lic,
@@ -328,7 +353,7 @@ export async function consumeLimit(binding, key, retryAfter = 60) {
   }
 }
 
-async function rejectIfLimited(env, target) {
+export async function rejectIfLimited(env, target) {
   const result = await consumeLimit(env[target.binding], target.key, target.retryAfter);
   if (!result.success) {
     return jsonError("rate_limited", "Too many requests. Try again later.", {
@@ -342,11 +367,11 @@ async function rejectIfLimited(env, target) {
 // HTTP helpers
 // ---------------------------------------------------------------------------
 
-function jsonOk(body, status = 200) {
+export function jsonOk(body, status = 200) {
   return new Response(JSON.stringify({ ok: true, ...body }), { status, headers: JSON_HEADERS });
 }
 
-function jsonError(code, message, extra = {}) {
+export function jsonError(code, message, extra = {}) {
   const status = HTTP_BY_CODE[code] ?? 400;
   const headers = { ...JSON_HEADERS };
   const error = { code, message };
@@ -362,7 +387,7 @@ function jsonNotFound() {
   return jsonError("not_found", "Not found.");
 }
 
-function clientIp(request) {
+export function clientIp(request) {
   // Used only as an in-memory limiter key. Never written to D1 or logs.
   const cf = request.headers.get("CF-Connecting-IP");
   if (cf) return cf.trim();
@@ -371,7 +396,7 @@ function clientIp(request) {
   return "local";
 }
 
-async function readJsonBody(request, { optional = false } = {}) {
+export async function readJsonBody(request, { optional = false } = {}) {
   const cl = request.headers.get("Content-Length");
   if (cl !== null && cl !== "") {
     const n = Number(cl);
@@ -414,7 +439,7 @@ export async function adminBearerOk(header, token) {
   return equal;
 }
 
-async function requireAdmin(request, env) {
+export async function requireAdmin(request, env) {
   const limited = await rejectIfLimited(env, adminLimiter());
   if (limited) return { error: limited };
   const ok = await adminBearerOk(request.headers.get("Authorization"), env.ADMIN_TOKEN);
@@ -470,7 +495,7 @@ function optionalVersion(value) {
 // D1 helpers
 // ---------------------------------------------------------------------------
 
-async function audit(db, licenseId, action, detail) {
+export async function audit(db, licenseId, action, detail) {
   const text = detail == null ? null : typeof detail === "string" ? detail : JSON.stringify(detail);
   await db
     .prepare("INSERT INTO audit (at, license_id, action, detail) VALUES (?, ?, ?, ?)")
@@ -486,11 +511,11 @@ async function countActive(db, licenseId) {
   return row?.n ?? 0;
 }
 
-async function getLicenseById(db, id) {
+export async function getLicenseById(db, id) {
   return db.prepare("SELECT * FROM licenses WHERE id = ?").bind(id).first();
 }
 
-async function getLicenseByHash(db, hash) {
+export async function getLicenseByHash(db, hash) {
   return db.prepare("SELECT * FROM licenses WHERE key_hash = ?").bind(hash).first();
 }
 
@@ -833,6 +858,10 @@ async function handleIssue(request, env) {
     if (!Number.isInteger(expiresAt) || expiresAt <= 0) {
       return jsonError("bad_request", "expires_at must be unix seconds or null.");
     }
+  } else if (!Object.prototype.hasOwnProperty.call(body.data, "expires_at") && planExpiry(plan, nowSec()) !== undefined) {
+    // Store plan ids (30d / 90d / 365d / lifetime): derive the expiry when it
+    // isn't given. An explicit expires_at (or null) still wins, for support.
+    expiresAt = planExpiry(plan, nowSec());
   }
   const note = body.data.note == null ? null : body.data.note;
   if (note != null && (typeof note !== "string" || note.length > 512)) {
@@ -1106,6 +1135,9 @@ async function handleApi(request, env, path) {
   const method = request.method.toUpperCase();
   const url = new URL(request.url);
 
+  // Store routes: CORS (haunted.ong only), own limiters, no admin gate.
+  if (isStorePath(path)) return handleStoreRoute(request, env, path, url);
+
   const admin = path.startsWith(API_BASE + "/admin/");
   let gate = null;
   if (admin) {
@@ -1145,6 +1177,10 @@ async function handleApi(request, env, path) {
   if (path === API_BASE + "/admin/audit") {
     if (method !== "GET") return jsonError("bad_request", "Method not allowed.");
     return handleAudit(url, env);
+  }
+
+  if (path === API_BASE + "/admin/orders" || path.startsWith(API_BASE + "/admin/orders/")) {
+    return handleAdminOrdersRoute(request, env, path, url);
   }
 
   const licReset = path.match(new RegExp(`^${API_BASE}/admin/licenses/(lic_[0-9A-HJKMNP-TV-Z]{16})/reset$`));
@@ -1202,6 +1238,25 @@ async function siteNotFound(request, env, extraHeaders) {
   return out;
 }
 
+// Unlisted store pages: never indexed, no referrer (the claim secret lives in
+// the URL fragment, but be safe), no framing, only same-origin code, and API
+// calls only to api.haunted.ong.
+const STORE_PAGE_HEADERS = {
+  "X-Robots-Tag": "noindex, nofollow",
+  "Referrer-Policy": "no-referrer",
+  "X-Frame-Options": "DENY",
+  "X-Content-Type-Options": "nosniff",
+  "Content-Security-Policy":
+    "default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; " +
+    "connect-src https://api.haunted.ong; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+};
+
+function storePageResponse(res) {
+  const out = new Response(res.body, res);
+  for (const [k, v] of Object.entries(STORE_PAGE_HEADERS)) out.headers.set(k, v);
+  return out;
+}
+
 async function handleApiHost(request, env, path) {
   let res;
   if (underPrefix(path, "/license")) res = await handleApi(request, env, path);
@@ -1222,15 +1277,29 @@ export default {
 
       // Site hosts. Note: test on the raw pathname too so /api/ and /client/ match.
       if (underPrefix(path, "/api")) return await siteNotFound(request, env);
-      if (underPrefix(path, "/client")) return await siteNotFound(request, env, { "X-Robots-Tag": "noindex" });
+      if (underPrefix(path, "/client")) {
+        const method = request.method.toUpperCase();
+        if (STORE_PAGE_HOSTS.has(host) && STORE_CLIENT_FILES.has(path) && (method === "GET" || method === "HEAD") &&
+            env.ASSETS && typeof env.ASSETS.fetch === "function") {
+          return storePageResponse(await env.ASSETS.fetch(request));
+        }
+        return await siteNotFound(request, env, { "X-Robots-Tag": "noindex" });
+      }
 
       if (!env.ASSETS || typeof env.ASSETS.fetch !== "function") {
         return new Response("Not found", { status: 404 });
       }
       return env.ASSETS.fetch(request);
     } catch (err) {
+      if (err && err.code === "key_expired") return jsonError("key_expired", "This license has expired.");
       // Do not leak internals, IPs, or secrets.
       return jsonError("server_error", "Internal server error.");
     }
+  },
+
+  // Cron Trigger (* * * * *): confirm pending/seen store orders, expire old
+  // ones, and drop revealable plaintext keys after 7 days.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(storeSweep(env).catch(() => {}));
   },
 };
