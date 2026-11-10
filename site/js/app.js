@@ -3,6 +3,9 @@ document.title = config.name;
 document.getElementById("avatar").alt = config.avatar.alt;
 document.getElementById("name").textContent = config.name;
 document.getElementById("bio").textContent = config.bio;
+const nowLine = document.getElementById("now");
+nowLine.textContent = config.now || "";
+nowLine.hidden = !config.now;
 
 document.getElementById("socials").append(...config.links.map(socialLink));
 
@@ -105,6 +108,16 @@ function setActive(id) {
   dots.forEach((dot) => dot.classList.toggle("active", dot.dataset.dot === id));
   hint.classList.toggle("hidden", id !== "home");
 }
+
+// Number keys 1, 2 and 3 jump to the sections the dots link to.
+document.addEventListener("keydown", (event) => {
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (event.target.closest?.("input, textarea, select, [contenteditable]")) return;
+  const section = sections[Number(event.key) - 1];
+  if (!section) return;
+  event.preventDefault();
+  section.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+});
 
 const observer = new IntersectionObserver((entries) => {
   const visible = entries

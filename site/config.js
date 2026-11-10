@@ -10,6 +10,9 @@ window.BOO_CONFIG = {
   // About card.
   bio: "trust in the process. dw about me.",
 
+  // One static line under the bio, like "currently building ...". Leave "" to hide it.
+  now: "",
+
   // Pills under the about cards: text, plus an optional icon (github or globe).
   // Leave the list empty to hide the row.
   skills: [],
@@ -65,6 +68,33 @@ window.BOO_CONFIG = {
           { label: "Live site", url: "https://haunted.ong" },
           { label: "Source", url: "https://github.com/whozach/zach" }
         ]
+      },
+      {
+        id: "octo",
+        title: "Octo",
+        image: "/assets/projects/octo.jpg",
+        imageAlt: "Octo voice assistant",
+        chips: ["In the works", "Voice assistant", "NixOS"],
+        line: "An always-on voice assistant for my Linux PC.",
+        body: "Octo is a voice assistant that runs all the time on my NixOS and Hyprland setup."
+      },
+      {
+        id: "cryptoclient",
+        title: "Crypto Client",
+        image: "/assets/projects/cryptoclient.jpg",
+        imageAlt: "Crypto Client for VRChat",
+        chips: ["In the works", "VRChat", "Linux"],
+        line: "A desktop VRChat client for Linux.",
+        body: "A VRChat desktop client built for Linux, running through Steam and Proton."
+      },
+      {
+        id: "ls5",
+        title: "Linux Station 5",
+        image: "/assets/projects/ls5.jpg",
+        imageAlt: "Linux Station 5 launcher",
+        chips: ["In the works", "Godot", "Linux"],
+        line: "A controller-first game launcher for Linux.",
+        body: "A fullscreen game launcher built in Godot, made to be driven with a controller."
       }
     ]
   }

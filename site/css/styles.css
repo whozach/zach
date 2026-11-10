@@ -52,6 +52,21 @@ a { color: inherit; }
   display: block;
 }
 
+/* smooth fade between the home page and /projects/ (skipped where unsupported) */
+@view-transition { navigation: auto; }
+
+/* faint, still film grain over the background */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url("../assets/grain.png") repeat;
+  background-size: 128px 128px;
+  opacity: 0.045;
+}
+
 main {
   position: relative;
   z-index: 1;
@@ -511,6 +526,28 @@ html.no-gl main {
   object-position: center;
 }
 
+/* photos sit slightly dimmed and come up to full brightness on hover or focus */
+.project-photo,
+.blog-post-photo {
+  filter: grayscale(1) brightness(0.8);
+  transition: filter 0.35s ease;
+}
+.project-toggle:hover .project-photo,
+.project-toggle:focus-visible .project-photo,
+.project.is-open .project-photo,
+.blog-post:hover .blog-post-photo,
+.blog-post:focus-within .blog-post-photo {
+  filter: grayscale(1) brightness(1);
+}
+
+.now {
+  margin: 12px 0 0;
+  color: var(--muted, #8a8a8a);
+  padding: 0 20px;
+  font-size: 14px;
+}
+.now[hidden] { display: none; }
+
 .project-toggle {
   display: block;
   width: 100%;
@@ -822,7 +859,9 @@ html.projects-page::-webkit-scrollbar-thumb {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
   html { scroll-behavior: auto; }
+  .project-photo, .blog-post-photo { transition: none; }
   .scroll-hint svg { animation: none; }
   .project-details { transition: none; }
   .profile,
