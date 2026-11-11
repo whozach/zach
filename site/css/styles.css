@@ -239,11 +239,28 @@ html.no-gl main {
   font-size: 30px;
   font-weight: 700;
   letter-spacing: -0.03em;
-  /* same white glow as the link icons below it */
+  /* white glow, much stronger than the link icons below it (Zach: more glow) */
+  position: relative;
+  isolation: isolate;
   text-shadow:
-    0 0 3px #fff,
-    0 0 8px rgba(255, 255, 255, 0.95),
-    0 0 16px rgba(255, 255, 255, 0.45);
+    0 0 2px #fff,
+    0 0 6px #fff,
+    0 0 12px #fff,
+    0 0 24px rgba(255, 255, 255, 0.95),
+    0 0 44px rgba(255, 255, 255, 0.8),
+    0 0 80px rgba(255, 255, 255, 0.55);
+}
+
+/* a soft halo of light behind the name */
+.profile h1::before {
+  content: "";
+  position: absolute;
+  inset: -40% -55%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.07) 55%, transparent);
+  filter: blur(6px);
+  pointer-events: none;
 }
 
 .socials {
