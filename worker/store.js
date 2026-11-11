@@ -22,6 +22,8 @@ import {
   sha256Hex, bytesEqual, newId, nowSec, b64urlEncode, b64urlDecode, parsePepper,
   getLicenseById, getLicenseByHash, generateKeyString, normalizeKey, keyHashHex,
 } from "./index.js";
+// Zach's answers (support contact, sales addresses) live only in store-settings.js.
+import { SUPPORT_CONTACT, SALES_ADDRESSES } from "./store-settings.js";
 
 const API_BASE = "/license/v1";
 const STORE_BASE = API_BASE + "/store";
@@ -44,9 +46,12 @@ export function planExpiry(plan, now) {
   return p.days == null ? null : now + p.days * 86400;
 }
 
-export const SOL_RECIPIENT = "4nfyHLEDszwxTgxUAz1B5t8U5ZagXxrkg59wuwrgkMrA";
-export const ETH_RECIPIENT = "0xd7ee3e4725967b353ba60334cf14679ed2f7df5e";
-export const BTC_RECIPIENT = "bc1qnhxzzgv7wg8cfkhmuwydgrgzmfycn67cmccfse";
+// Receiving addresses: set in store-settings.js (checked by tests/store-unit.mjs).
+// BTC (bech32) and ETH are compared lowercase everywhere.
+export const SOL_RECIPIENT = SALES_ADDRESSES.solana.trim();
+export const ETH_RECIPIENT = SALES_ADDRESSES.ethereum.trim().toLowerCase();
+export const BTC_RECIPIENT = SALES_ADDRESSES.bitcoin.trim().toLowerCase();
+export const SUPPORT = SUPPORT_CONTACT.trim();
 export const USDC_SOL_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"; // Circle, Solana mainnet
 export const USDC_ETH_CONTRACT = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"; // Circle, Ethereum mainnet
 const SYSTEM_PROGRAM = "11111111111111111111111111111111";
@@ -506,7 +511,7 @@ function handleConfig(env) {
   // Default: Solana USDC when Solana checks are on, else the first coin that is on (Bitcoin).
   const on = coins.filter((c) => c.auto_confirm);
   const def = on.find((c) => c.chain === "solana" && c.asset === "usdc") || on[0] || null;
-  return jsonOk({ plans, coins, default_coin: def ? { chain: def.chain, asset: def.asset } : null, order_ttl_seconds: ORDER_TTL });
+  return jsonOk({ plans, coins, default_coin: def ? { chain: def.chain, asset: def.asset } : null, order_ttl_seconds: ORDER_TTL, support: SUPPORT || null });
 }
 
 async function handleCreateOrder(request, env) {
@@ -1071,9 +1076,13 @@ async function adminExport(env, url) {
   const f = from == null || from === "" ? 0 : Number(from);
   const t = to == null || to === "" ? 4102444800 : Number(to);
   if (!Number.isInteger(f) || !Number.isInteger(t) || f < 0 || t < f) return jsonError("bad_request", "from/to must be unix seconds.");
+  // Test orders (tools/store-test-order.sh) are fulfilled by hand with a fake txid "TESTORDER<ms>". They
+  // aren't sales, so the export for Ledger leaves them out. A real txid can't start with that: BTC/ETH txids
+  // are hex and Solana signatures are base58, which has no capital O. GET /admin/orders still lists them.
   const { results } = await env.LICENSE_DB.prepare(
     `SELECT o.*, l.key_hint AS key_hint FROM orders o LEFT JOIN licenses l ON l.id = o.license_id
       WHERE o.status IN ('paid','manual') AND o.paid_at >= ? AND o.paid_at <= ?
+        AND NOT (o.status = 'manual' AND o.chain_txid LIKE 'TESTORDER%')
       ORDER BY o.paid_at ASC, o.id ASC LIMIT 5000`,
   ).bind(f, t).all();
   const items = (results || []).map((o) => ({

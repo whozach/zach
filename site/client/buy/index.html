@@ -22,6 +22,18 @@
     <div id="message" class="warn error" hidden role="alert"></div>
 
     <section id="pick">
+      <!-- Crypto Client 0.53.1 screenshots: webp first, png fallback; each opens full size -->
+      <div class="shots">
+        <a class="shot" href="/assets/projects/crypto-client-movement.png" target="_blank" rel="noopener">
+          <picture><source srcset="/assets/projects/crypto-client-movement.webp" type="image/webp"><img src="/assets/projects/crypto-client-movement.png" alt="Crypto Client 0.53.1 menu, Movement page: flight, flight speed, fly where you look and speed" width="1600" height="900" decoding="async"></picture>
+        </a>
+        <a class="shot" href="/assets/projects/crypto-client-visuals-esp.png" target="_blank" rel="noopener">
+          <picture><source srcset="/assets/projects/crypto-client-visuals-esp.webp" type="image/webp"><img src="/assets/projects/crypto-client-visuals-esp.png" alt="Crypto Client 0.53.1 menu, Visuals page: ESP, nameplates, speaking glow, render distance and boxes" width="1600" height="900" decoding="async"></picture>
+        </a>
+        <a class="shot" href="/assets/projects/crypto-client-hotkeys.png" target="_blank" rel="noopener">
+          <picture><source srcset="/assets/projects/crypto-client-hotkeys.webp" type="image/webp"><img src="/assets/projects/crypto-client-hotkeys.png" alt="Crypto Client 0.53.1 menu, Settings page with rebindable hotkeys for panic, spectate, zoom, fly and ESP" width="1600" height="900" decoding="async"></picture>
+        </a>
+      </div>
       <div class="card">
         <h2>plan</h2>
         <div class="choices" id="plans"></div>
@@ -34,6 +46,7 @@
       </div>
       <button class="btn wide" type="button" id="create" disabled>continue</button>
       <p class="note">You get an exact amount to send. It's held for 15 minutes.</p>
+      <p class="note" id="terms">All sales are final. No refunds. Send the exact amount on the network shown.</p>
     </section>
 
     <section id="pay" hidden>
@@ -53,6 +66,8 @@
       <p class="note">Keep this page's address if you close the tab: it brings this order back. It contains a private claim code, so don't share it.</p>
     </section>
 
+    <!-- filled from the store's config (worker/store-settings.js SUPPORT_CONTACT); stays hidden while it's empty -->
+    <p class="note support" id="support" hidden>Questions or a payment problem: <span id="supportContact"></span></p>
     <p class="foot">unlisted page · <a href="/client/dashboard/">dashboard</a></p>
   </main>
   <script src="/client/assets/qrcodegen.js"></script>

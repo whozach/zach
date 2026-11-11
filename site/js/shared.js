@@ -29,6 +29,16 @@ function icon(name) {
   return wrap.firstChild;
 }
 
+// An <img>, or a <picture> that offers the webp first with the png/jpg <img> as the fallback.
+// The <picture> is display: contents, so the <img> keeps its own layout and CSS.
+// src goes on last, after loading="lazy" and the webp <source>, so only one file is fetched.
+function picture(src, webp, attrs) {
+  const img = el("img", { decoding: "async", ...attrs });
+  const out = webp ? el("picture", { class: "pic" }, el("source", { srcset: webp, type: "image/webp" }), img) : img;
+  img.src = src;
+  return out;
+}
+
 function chips(item) {
   return el("span", { class: "chips" }, item.chips.map((chip) => el("span", { class: "chip" }, chip)));
 }

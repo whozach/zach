@@ -10,9 +10,11 @@
   function previews() {
     const shots = item.screenshots || [];
     if (!shots.length) return null;
-    return el("div", { class: "cc-shots" }, shots.map((shot, i) => shot.src
+    // has-real: every frame is a real screenshot, so phones stack all of them full width
+    const real = shots.every((shot) => shot.src);
+    return el("div", { class: `cc-shots${real ? " has-real" : ""}` }, shots.map((shot, i) => shot.src
       ? el("figure", { class: "cc-shot" },
-          el("img", { src: shot.src, alt: shot.alt || `${item.title} screenshot ${i + 1}`, width: 800, height: 500, loading: "lazy" }))
+          picture(shot.src, shot.webp, { alt: shot.alt || `${item.title} screenshot ${i + 1}`, width: 1600, height: 900, loading: "lazy" }))
       : el("figure", { class: "cc-shot is-preview", role: "img", "aria-label": `Preview ${i + 1}, real screenshot coming` },
           el("span", { class: "cc-shot-frame", "aria-hidden": "true" },
             el("span", { class: "cc-shot-bar" }), el("span", { class: "cc-shot-side" }), el("span", { class: "cc-shot-main" })),

@@ -65,6 +65,9 @@ a.cc-buy:focus-visible {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* real screenshots are 16:9 (1600x900), so their frames are too and nothing gets cropped */
+.cc-shot:not(.is-preview) { aspect-ratio: 16 / 9; }
+
 .cc-shot img {
   display: block;
   width: 100%;
@@ -231,5 +234,8 @@ a.cc-buy:focus-visible {
 @media (max-width: 520px) {
   .cc-shots { grid-template-columns: 1fr 1fr; }
   .cc-shot:nth-child(3) { display: none; }
+  /* real screenshots: one per row, all three, wide enough to read */
+  .cc-shots.has-real { grid-template-columns: 1fr; }
+  .cc-shots.has-real .cc-shot:nth-child(3) { display: block; }
   .cc-cat-count { display: none; }
 }

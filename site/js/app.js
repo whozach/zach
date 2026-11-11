@@ -54,7 +54,8 @@ if (showcased) {
   showcase.href = `/projects/#${showcased.id}`;
   showcase.setAttribute("aria-label", `Main project: ${showcased.title}. ${showcased.line}`);
   showcase.append(
-    el("img", { class: "showcase-photo", src: showcased.image, alt: "", width: 800, height: 500, style: showcased.imageFocus && `object-position: ${showcased.imageFocus}` }),
+    // alt "": the link's aria-label already names the project. Below the fold (About), so lazy.
+    picture(showcased.image, showcased.imageWebp, { class: "showcase-photo", alt: "", width: 800, height: 500, loading: "lazy", style: showcased.imageFocus && `object-position: ${showcased.imageFocus}` }),
     el("span", { class: "showcase-top" },
       el("span", { class: "showcase-label" }, "main project"),
       chips(showcased)),
@@ -83,7 +84,7 @@ config.projects.items.slice(0, config.projects.featured).forEach((item) => {
   const detailsId = `details-${item.id}`;
   projectList.append(el("article", { class: "project" },
     el("button", { class: "project-toggle", type: "button", "aria-expanded": "false", "aria-controls": detailsId },
-      el("img", { class: "project-photo", src: item.image, alt: "", style: item.imageFocus && `object-position: ${item.imageFocus}` }),
+      picture(item.image, item.imageWebp, { class: "project-photo", alt: "", loading: "lazy", style: item.imageFocus && `object-position: ${item.imageFocus}` }),
       el("span", { class: "project-summary" },
         chips(item),
         el("span", { class: "project-copy" },

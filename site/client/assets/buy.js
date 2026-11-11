@@ -4,7 +4,21 @@
   var S = window.CCStore, el = S.el;
   var $ = function (id) { return document.getElementById(id); };
   var POLL_MS = 6000;
-  var state = { config: null, plan: "30d", coin: null, order: null, claim: null, timer: null, tick: null, renew: null };
+  var state = { config: null, plan: "30d", coin: null, order: null, claim: null, timer: null, tick: null, renew: null, support: "" };
+
+  // Support contact from the store config (worker/store-settings.js). An email or https:// link
+  // becomes a link; anything else is plain text. Empty: the line stays hidden.
+  function showSupport(contact) {
+    state.support = typeof contact === "string" ? contact : "";
+    var box = $("supportContact");
+    box.textContent = "";
+    if (state.support) {
+      var href = /^https:\/\/\S+$/.test(state.support) ? state.support
+        : /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(state.support) ? "mailto:" + state.support : null;
+      box.appendChild(href ? el("a", { href: href, rel: "noopener noreferrer", target: "_blank", text: state.support }) : document.createTextNode(state.support));
+    }
+    $("support").hidden = !state.support;
+  }
 
   function showMessage(text) {
     var m = $("message");
@@ -46,7 +60,17 @@
   function loadConfig() {
     return S.api("GET", "/config").then(function (j) {
       if (!j.ok) { showMessage(S.errText(j)); return; }
-      state.config = j; renderPick();
+      state.config = j; showSupport(j.support); renderPick();
+    });
+  }
+
+  // A resumed order (#o=..&c=..) skips the plan picker but still shows the support contact,
+  // and fills it into the expired text once it arrives.
+  function loadSupportOnly() {
+    S.api("GET", "/config").then(function (j) {
+      if (!j.ok) return;
+      showSupport(j.support);
+      if (state.order && state.order.status === "expired") updateStatus(state.order);
     });
   }
 
@@ -102,7 +126,8 @@
       cd.textContent = "You can leave this page open or come back to this address later.";
     } else if (o.status === "expired") {
       s.textContent = "This order expired";
-      cd.textContent = "No payment was seen in time. If you did send funds, keep this page's address and contact support for a manual check.";
+      cd.textContent = "No payment was seen in time. If you did send funds, keep this page's address and contact support for a manual check" +
+        (state.support ? ": " + state.support + "." : ".");
     } else if (o.status === "paid" || o.status === "manual") {
       s.textContent = "Paid. Opening your key…";
       cd.textContent = "";
@@ -155,6 +180,7 @@
     $("startOver").addEventListener("click", function () { history.replaceState(null, "", location.pathname); location.reload(); });
     if (h.o && h.c) {
       state.claim = h.c;
+      loadSupportOnly();
       S.api("GET", "/orders/" + encodeURIComponent(h.o) + "?claim=" + encodeURIComponent(h.c)).then(function (j) {
         if (!j.ok) { showMessage(j.httpStatus === 404 ? "This order link isn't valid." : S.errText(j)); $("pick").hidden = true; return; }
         state.order = j.order;

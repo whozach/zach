@@ -305,6 +305,9 @@ html.no-gl main {
   transform: translate(-50%, 0);
 }
 
+/* <picture> wrappers (webp + png fallback) stay out of layout; the <img> inside is styled as before */
+.pic { display: contents; }
+
 /* ---------- showcase card ---------- */
 
 .showcase {
@@ -828,6 +831,9 @@ html.projects-page::-webkit-scrollbar-thumb {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: #141416;
 }
+
+/* the open post's photo stays monotone too (the Crypto Client shots have a green accent) */
+.post-photo { filter: grayscale(1); }
 
 .blog-post-title {
   margin: 0 0 14px;

@@ -6,7 +6,7 @@
  */
 import {
   PLANS, coinAllowed, planExpiry, usdToUnits, formatUnits, combineQuotes, b58encode, b58decode,
-  associatedTokenAddress, matchBtc, matchEth, PRICE_SOURCES, SOL_RECIPIENT, USDC_SOL_MINT, BTC_RECIPIENT, ETH_RECIPIENT, autoConfirm,
+  associatedTokenAddress, matchBtc, matchEth, PRICE_SOURCES, SOL_RECIPIENT, USDC_SOL_MINT, BTC_RECIPIENT, ETH_RECIPIENT, autoConfirm, SUPPORT,
 } from "../worker/store.js";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
@@ -28,7 +28,31 @@ check("combineQuotes: 1.9% ok, 2.1% refused", combineQuotes(150, 152.85).ok && !
 check("two price sources per volatile coin; SOL = Coinbase + Kraken", Object.values(PRICE_SOURCES).every((s) => s.length === 2) && PRICE_SOURCES.sol.map((s) => s.name).join() === "coinbase:SOL-USD,kraken:SOLUSD");
 const r = crypto.getRandomValues(new Uint8Array(32)); r[0] = 0;
 check("base58 round trip (leading zero kept)", Buffer.from(b58decode(b58encode(r))).equals(Buffer.from(r)) && b58encode(new Uint8Array(32)) === "11111111111111111111111111111111");
-check("USDC ATA of Ledger's Solana wallet", (await associatedTokenAddress(SOL_RECIPIENT, USDC_SOL_MINT)) === "3QgRp2GymVS9BGHvXPZVJJmQAE742gMohr1Mxg7MWy2V");
+// fixed vector (the first sales wallet), so this stays a check of the derivation whatever store-settings.js says
+check("USDC ATA derivation (known wallet -> known token account)", (await associatedTokenAddress("4nfyHLEDszwxTgxUAz1B5t8U5ZagXxrkg59wuwrgkMrA", USDC_SOL_MINT)) === "3QgRp2GymVS9BGHvXPZVJJmQAE742gMohr1Mxg7MWy2V");
+
+// ---- worker/store-settings.js: Zach's answers are well-formed (a typo here loses a buyer's payment) ----
+function bech32Ok(addr) {
+  const CH = "qpzry9x8gf2tvdw0s3jn54khce6mua7l";
+  const s = addr.toLowerCase(), pos = s.lastIndexOf("1");
+  if (addr !== s && addr !== addr.toUpperCase()) return false;
+  const hrp = s.slice(0, pos), data = [...s.slice(pos + 1)].map((c) => CH.indexOf(c));
+  if (hrp !== "bc" || data.length < 7 || data.includes(-1)) return false;
+  const G = [0x3b6a57b2, 0x26508e6d, 0x1ea119fa, 0x3d4233dd, 0x2a1462b3];
+  let chk = 1;
+  for (const v of [...[...hrp].map((c) => c.charCodeAt(0) >> 5), 0, ...[...hrp].map((c) => c.charCodeAt(0) & 31), ...data]) {
+    const top = chk >>> 25; chk = ((chk & 0x1ffffff) << 5) ^ v;
+    for (let i = 0; i < 5; i++) if ((top >>> i) & 1) chk ^= G[i];
+  }
+  return chk === 1 && data[0] === 0; // checksum OK, witness version 0 (bc1q)
+}
+check("sales address: Bitcoin is a valid bc1q address (bech32 checksum)", /^bc1q[02-9ac-hj-np-z]{38}([02-9ac-hj-np-z]{20})?$/.test(BTC_RECIPIENT) && bech32Ok(BTC_RECIPIENT), BTC_RECIPIENT);
+check("bech32 check catches a one-character typo", !bech32Ok("bc1qnhxzzgv7wg8cfkhmuwydgrgzmfycn67cmccfsf") && bech32Ok("bc1qnhxzzgv7wg8cfkhmuwydgrgzmfycn67cmccfse"));
+let solBytes = null; try { solBytes = b58decode(SOL_RECIPIENT); } catch { /* bad base58 */ }
+check("sales address: Solana is a 32-byte base58 key with a USDC token account", solBytes?.length === 32 && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(SOL_RECIPIENT) &&
+  typeof (await associatedTokenAddress(SOL_RECIPIENT, USDC_SOL_MINT).catch(() => null)) === "string", SOL_RECIPIENT);
+check("sales address: Ethereum is 0x + 40 hex (stored lowercase)", /^0x[0-9a-f]{40}$/.test(ETH_RECIPIENT), ETH_RECIPIENT);
+check("support contact: a short plain string (\"\" = hidden)", typeof SUPPORT === "string" && SUPPORT.length <= 120 && !/[<>\r\n]/.test(SUPPORT), JSON.stringify(SUPPORT));
 
 const t = tokenTimes(1000, null);
 const c = tokenTimes(1000, 1000 + 7200);

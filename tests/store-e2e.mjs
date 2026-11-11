@@ -14,16 +14,20 @@ import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import { createMock } from "./store-mock.mjs";
+// The sales addresses and support contact come from worker/store-settings.js, so a new wallet
+// there needs no test edits. The USDC token account is derived (store-unit checks the derivation).
+import { SALES_ADDRESSES, SUPPORT_CONTACT } from "../worker/store-settings.js";
+import { associatedTokenAddress } from "../worker/store.js";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PORT_A = Number(process.env.STORE_PORT || 8801), PORT_B = PORT_A + 1;
 const API_HOST = "api.haunted.ong";
-const OUR_SOL = "4nfyHLEDszwxTgxUAz1B5t8U5ZagXxrkg59wuwrgkMrA";
-const OUR_USDC_ATA = "3QgRp2GymVS9BGHvXPZVJJmQAE742gMohr1Mxg7MWy2V"; // checked against @solana/spl-token getAssociatedTokenAddressSync
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
-const OUR_ETH = "0xd7ee3e4725967b353ba60334cf14679ed2f7df5e";
+const OUR_SOL = SALES_ADDRESSES.solana.trim();
+const OUR_USDC_ATA = await associatedTokenAddress(OUR_SOL, USDC_MINT);
+const OUR_ETH = SALES_ADDRESSES.ethereum.trim().toLowerCase();
 const USDC_ETH = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
-const OUR_BTC = "bc1qnhxzzgv7wg8cfkhmuwydgrgzmfycn67cmccfse";
+const OUR_BTC = SALES_ADDRESSES.bitcoin.trim().toLowerCase();
 const SYSTEM = "11111111111111111111111111111111", TOKEN = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", ATA_PROG = "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
 const ORIGIN = "https://haunted.ong";
 
@@ -153,6 +157,7 @@ async function main() {
   record("config: 4 plans at $7.99 / $22.99 / $59.99 / $124.99", cfg.json?.plans?.map((p) => p.id + "=" + p.usd).join(",") === "30d=7.99,90d=22.99,365d=59.99,lifetime=124.99");
   record("config: lifetime offered only on Solana USDC/SOL", lifeCoins === "solana:sol,solana:usdc", lifeCoins);
   record("config: default coin is Solana USDC", cfg.json?.default_coin?.chain === "solana" && cfg.json?.default_coin?.asset === "usdc");
+  record("config: support contact is the one in store-settings.js (null while empty)", cfg.json?.support === (SUPPORT_CONTACT.trim() || null), JSON.stringify(cfg.json?.support));
   record("CORS: store response carries ACAO for https://haunted.ong (+ Vary: Origin, no-store)", cfg.h.get("access-control-allow-origin") === ORIGIN && /Origin/.test(cfg.h.get("vary") || "") && cfg.h.get("cache-control") === "no-store");
   const pre = await fetch(A + "/license/v1/store/orders", { method: "OPTIONS", headers: { origin: "https://www.haunted.ong", "access-control-request-method": "POST", "access-control-request-headers": "content-type" } });
   record("CORS: preflight from https://www.haunted.ong -> 204 with methods/headers", pre.status === 204 && pre.headers.get("access-control-allow-origin") === "https://www.haunted.ong" && /POST/.test(pre.headers.get("access-control-allow-methods") || "") && /content-type/i.test(pre.headers.get("access-control-allow-headers") || ""), `${pre.status}`);
@@ -483,6 +488,15 @@ async function main() {
   // ---------------- admin list + export ----------------
   const noAuth = await a("GET", "/admin/orders/export", { origin: null });
   record("admin export needs ADMIN_TOKEN", noAuth.status === 401);
+  // a test order (tools/store-test-order.sh): fulfilled by hand with txid "TESTORDER<ms>"; never a sale
+  const tst = (await order("30d", "bitcoin", "btc")).json;
+  const tstF = await a("POST", `/admin/orders/${tst.order.id}/fulfill`, { token: admin, origin: null, body: { txid: "TESTORDER" + Date.now(), index: 0, note: "TEST ORDER, not a sale (tools/store-test-order.sh)" } });
+  const tstEx = await a("GET", "/admin/orders/export", { token: admin, origin: null });
+  const tstCsv = await (await fetch(A + "/license/v1/admin/orders/export?format=csv", { headers: { authorization: "Bearer " + admin } })).text();
+  const tstList = await a("GET", `/admin/orders/${tst.order.id}`, { token: admin, origin: null });
+  record("admin export: a TESTORDER test fulfillment is left out (JSON and CSV), but the admin order view still has it",
+    tstF.status === 200 && tstF.json?.order?.status === "manual" && !(tstEx.json?.items || []).some((i) => i.order_id === tst.order.id) &&
+    !tstCsv.includes(tst.order.id) && tstList.json?.order?.status === "manual", `${tstF.status} ${tstF.json?.error?.code || ""}`);
   const ex = await a("GET", "/admin/orders/export", { token: admin, origin: null });
   const items = ex.json?.items || [];
   const sample = items.find((i) => i.order_id === bo.order.id);

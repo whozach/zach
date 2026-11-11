@@ -40,8 +40,12 @@ window.BOO_CONFIG = {
       {
         id: "cryptoclient",
         title: "Crypto Client",
-        image: "/assets/projects/cryptoclient.jpg",
-        imageAlt: "Crypto Client for VRChat",
+        // imageWebp (optional): served first, with image as the fallback for browsers without webp.
+        image: "/assets/projects/crypto-client-movement.png",
+        imageWebp: "/assets/projects/crypto-client-movement.webp",
+        imageAlt: "Crypto Client 0.53.1 menu, Movement page with flight and speed settings",
+        // Which part of the photo the short cards show (the window's title bar and menu).
+        imageFocus: "center 16%",
         chips: ["In the works", "VRChat", "Linux"],
         line: "A desktop VRChat client for Linux.",
         body: "Crypto Client is my VRChat desktop client for Linux. It runs on NixOS, with VRChat going through Steam and Proton. It needs a license key, bought and managed here on haunted.ong.",
@@ -50,14 +54,18 @@ window.BOO_CONFIG = {
         // disclaimer: the small grey line under the button (shown either way; "" hides it).
         buy: { enabled: false, url: "/client/buy/", label: "Buy a key",
                disclaimer: "haunted.ong is not responsible for how Crypto Client is used or by whom." },
-        // Crypto Client only (rendered by /js/projects-client.js). To swap a preview for a real
-        // screenshot, set its src to an 800x500 greyscale image in /assets/projects/ and give it an alt.
+        // Crypto Client only (rendered by /js/projects-client.js). Each is a 1600x900 image in
+        // /assets/projects/: src is the png fallback, webp is served first, alt describes it.
+        // { src: "", alt: "" } shows an empty "real screenshot coming" frame instead.
         screenshots: [
-          { src: "", alt: "" },
-          { src: "", alt: "" },
-          { src: "", alt: "" }
+          { src: "/assets/projects/crypto-client-movement.png", webp: "/assets/projects/crypto-client-movement.webp",
+            alt: "Crypto Client 0.53.1 menu, Movement page: flight, flight speed, fly where you look and speed" },
+          { src: "/assets/projects/crypto-client-visuals-esp.png", webp: "/assets/projects/crypto-client-visuals-esp.webp",
+            alt: "Crypto Client 0.53.1 menu, Visuals page: ESP, nameplates, speaking glow, render distance and boxes" },
+          { src: "/assets/projects/crypto-client-hotkeys.png", webp: "/assets/projects/crypto-client-hotkeys.webp",
+            alt: "Crypto Client 0.53.1 menu, Settings page with rebindable hotkeys for panic, spectate, zoom, fly and ESP" }
         ],
-        // Feature list. One line per feature: status "in" = In the client (built in 0.51), "soon" = Coming soon.
+        // Feature list (0.53.1 menu, src/menu.cpp). One line per feature: status "in" = In the client (built in 0.53.1), "soon" = Coming soon.
         // To revert a feature that fails testing, change only its status on its own line, e.g.
         //   { status: "in", name: "Freecam", ... }  ->  { status: "soon", name: "Freecam", ... }
         // The counts on the page are worked out from these lines; nothing else needs editing.
@@ -102,6 +110,7 @@ window.BOO_CONFIG = {
             { status: "in", name: "Freecam", desc: "Fly the camera while your avatar stays put, with speed and smoothing" },
             { status: "in", name: "Spectate view", desc: "Shoulder, first person or orbit, on the player you're watching" },
             { status: "in", name: "Spectate hotkeys", desc: "Page Up and Page Down switch who you're watching" },
+            { status: "in", name: "Print orbit", desc: "Your own photo prints that nobody holds circle you, with radius and speed. Others see them move" },
             { status: "in", name: "Custom field of view", desc: "From 40 to 110 degrees" },
             { status: "in", name: "Zoom key", desc: "Hold a key to zoom in" },
             { status: "in", name: "Near clip", desc: "So close geometry doesn't vanish" },
@@ -184,7 +193,6 @@ window.BOO_CONFIG = {
             { status: "in", name: "Remembered menu position, scale and opacity", desc: "" },
             { status: "in", name: "Profiles", desc: "Save and load named setting profiles" },
             { status: "in", name: "Accent colors", desc: "Four preset accents" },
-            { status: "in", name: "Favorites", desc: "Pin features you use most" },
             { status: "in", name: "Log viewer", desc: "The last 50 log lines, in the menu" },
             { status: "in", name: "Rebindable hotkeys", desc: "Bind the menu, panic, spectate, zoom and other keys" },
             { status: "in", name: "License panel", desc: "Activate a key, see your plan and expiry, with a warning 3 days before" }
