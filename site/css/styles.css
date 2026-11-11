@@ -111,6 +111,7 @@ html.no-gl main {
 
   .profile,
   .about-inner,
+  .mainproj-inner,
   .projects-inner {
     animation: area-fall linear both;
     animation-timeline: --area;
@@ -544,6 +545,70 @@ html.no-gl main {
 
 /* ---------- projects ---------- */
 
+/* ---------- main project screen (skeleton) ---------- */
+
+.mainproj {
+  display: grid;
+  place-items: center;
+  padding: 88px 24px 72px;
+}
+
+.mainproj-inner {
+  width: min(720px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.mainproj-logo {
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 26px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.mainproj-logo.has-logo { border: 0; background: none; }
+.mainproj-logo img { width: 100%; height: 100%; object-fit: contain; }
+.mainproj-logo-empty {
+  width: 38%;
+  height: 38%;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.mainproj-label {
+  margin: 0 0 8px;
+  color: #9a9a9a;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mainproj-title {
+  margin: 0;
+  font-size: 48px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: #fff;
+}
+
+.mainproj-line {
+  margin: 12px 0 0;
+  max-width: 460px;
+  color: #a3a3a3;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .mainproj-logo { width: 104px; height: 104px; border-radius: 24px; }
+  .mainproj-title { font-size: 36px; }
+}
+
 .projects {
   display: grid;
   place-items: center;
@@ -945,6 +1010,7 @@ html.projects-page::-webkit-scrollbar-thumb {
   .project-details { transition: none; }
   .profile,
   .about-inner,
+  .mainproj-inner,
   .projects-inner {
     animation: none;
     opacity: 1;
