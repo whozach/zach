@@ -64,22 +64,6 @@ if (showcased) {
   showcase.hidden = false;
 }
 
-/* ---------- main project screen (config.main) ---------- */
-
-if (config.main) {
-  document.getElementById("mainLabel").textContent = config.main.label || "";
-  document.getElementById("mainTitle").textContent = config.main.title || "";
-  const mainLine = document.getElementById("mainLine");
-  mainLine.textContent = config.main.line || "";
-  mainLine.hidden = !config.main.line;
-  if (config.main.logo) {
-    const box = document.getElementById("mainLogo");
-    box.textContent = "";
-    box.append(el("img", { src: config.main.logo, alt: config.main.logoAlt || config.main.title || "", decoding: "async", loading: "lazy" }));
-    box.classList.add("has-logo");
-  }
-}
-
 const presence = document.getElementById("presence");
 presence.href = config.links[0].url;
 presence.setAttribute("aria-label", `${config.name} on ${config.links[0].name}`);
@@ -143,7 +127,7 @@ function setActive(id) {
   hint.classList.toggle("hidden", id !== "home");
 }
 
-// Number keys 1 to 4 jump to the sections the dots link to.
+// Number keys 1, 2 and 3 jump to the sections the dots link to.
 document.addEventListener("keydown", (event) => {
   if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
   if (event.target.closest?.("input, textarea, select, [contenteditable]")) return;

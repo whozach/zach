@@ -28,18 +28,9 @@ window.BOO_CONFIG = {
 
   // The showcase card under the name on the profile screen: the id of one project below.
   // It shows that project's chips, title and line, and links to it on /projects/.
-  // Leave "" to hide it. (Off: the main project has its own screen now, see `main`.)
+  // Leave "" to hide it. (Off: the Experience card in About took its place.)
   showcase: "",
 
-  // The main project's own screen, between About and Projects (a skeleton until Zach's design).
-  // logo: path to the logo image ("" shows an empty logo frame). title/line: text. "" hides the line.
-  main: {
-    label: "main project",
-    title: "Coming soon",
-    line: "Something new is on the way.",
-    logo: "",
-    logoAlt: ""
-  },
 
   // Projects, in the order shown. id is the link anchor on /projects/ (#id), so keep it
   // stable once published. The home screen shows the first `featured` of them.
