@@ -21,6 +21,12 @@
     <div id="renewBanner" class="warn" hidden></div>
     <div id="message" class="warn error" hidden role="alert"></div>
 
+    <!-- shown from the first paint until the store's plans and coins arrive (or fail, with retry) -->
+    <div class="loading" id="loadState" role="status" aria-live="polite">
+      <span class="spinner" id="loadSpin" aria-hidden="true"></span>
+      <span id="loadText">Loading plans and prices…</span>
+      <button class="copy" type="button" id="retryBtn" hidden>retry</button>
+    </div>
     <section id="pick">
       <!-- Crypto Client 0.53.1 screenshots: webp first, png fallback; each opens full size -->
       <div class="shots">
@@ -36,13 +42,19 @@
       </div>
       <div class="card">
         <h2>plan</h2>
-        <div class="choices" id="plans"></div>
+        <div class="choices" id="plans" aria-busy="true">
+          <span class="choice skeleton" aria-hidden="true"></span><span class="choice skeleton" aria-hidden="true"></span>
+          <span class="choice skeleton" aria-hidden="true"></span><span class="choice skeleton" aria-hidden="true"></span>
+        </div>
         <p class="note" id="planNote" hidden></p>
       </div>
       <div class="card">
         <h2>pay with</h2>
-        <div class="choices" id="coins"></div>
-        <p class="note" id="coinNote">Lifetime can only be paid on Solana (USDC or SOL).</p>
+        <div class="choices" id="coins" aria-busy="true">
+          <span class="choice skeleton" aria-hidden="true"></span><span class="choice skeleton" aria-hidden="true"></span>
+          <span class="choice skeleton" aria-hidden="true"></span>
+        </div>
+        <p class="note" id="coinNote" hidden></p>
       </div>
       <button class="btn wide" type="button" id="create" disabled>continue</button>
       <p class="note">You get an exact amount to send. It's held for 15 minutes.</p>

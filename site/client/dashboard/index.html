@@ -18,6 +18,12 @@
 
     <noscript><div class="warn">This page needs JavaScript.</div></noscript>
     <div id="message" class="warn error" hidden role="alert"></div>
+    <!-- shown from the first paint while a dashboard link loads; retry if it's slow or fails -->
+    <div class="loading" id="loadState" role="status" aria-live="polite">
+      <span class="spinner" id="loadSpin" aria-hidden="true"></span>
+      <span id="loadText">Loading your key…</span>
+      <button class="copy" type="button" id="retryBtn" hidden>retry</button>
+    </div>
 
     <section id="lookup" hidden>
       <div class="card">

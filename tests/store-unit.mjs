@@ -107,5 +107,37 @@ check("page: renew mode hides Lifetime", !pick(cfgOff, "30d", null, true).plans.
 const pNone = pick({ plans: planList, coins: coinList([]), default_coin: null }, "30d", null, false);
 check("page: nothing on -> continue disabled", !pNone.canCreate && pNone.coin === null);
 
+// ---- plan and coin always agree (Zach: "Bitcoin picked, Lifetime still selectable") ----
+const cfgLive = { plans: planList, coins: coinList(["bitcoin", "solana"]), default_coin: { chain: "solana", asset: "usdc" } };
+const btc = pick(cfgLive, "30d", "bitcoin:btc", false);
+const lifeB = btc.plans.find((p) => p.id === "lifetime");
+check("Bitcoin picked: Lifetime shown but disabled, price kept, reason up front", btc.coin === "bitcoin:btc" && btc.plan === "30d" && lifeB.available && !lifeB.enabled && lifeB.tag === "$124.99" &&
+  lifeB.note === "Lifetime is paid with USDC (Solana) or SOL. Pick one of those to buy it.", lifeB.note);
+check("Bitcoin picked: 30/90/365 enabled", btc.plans.filter((p) => p.enabled).map((p) => p.id).join() === "30d,90d,365d");
+const lifeS = pick(cfgLive, "lifetime", "solana:usdc", false);
+const btcL = lifeS.coins.find((c) => c.key === "bitcoin:btc");
+check("Lifetime picked: Bitcoin disabled as 'not for Lifetime', Solana coins enabled, note says why", lifeS.plan === "lifetime" && lifeS.coin === "solana:usdc" && !btcL.enabled && btcL.tag === "not for Lifetime" &&
+  lifeS.coins.filter((c) => c.enabled).map((c) => c.key).join() === "solana:usdc,solana:sol" && lifeS.coinNote === "Lifetime can only be paid with USDC (Solana) or SOL.", lifeS.coinNote);
+check("Lifetime picked: Ethereum coins that are off say 'not on yet'", lifeS.coins.filter((c) => c.key.startsWith("ethereum")).every((c) => !c.enabled && c.tag === "not on yet"));
+const old = pick(cfgLive, "lifetime", "bitcoin:btc", false);
+check("old link (Lifetime + Bitcoin): keeps Lifetime and moves to the default Solana coin", old.plan === "lifetime" && old.coin === "solana:usdc" && old.canCreate);
+check("30 days picked: no coin note (every coin that's on pays it)", pick(cfgLive, "30d", "solana:sol", false).coinNote === "");
+const ethOn = pick(cfgOn, "30d", "ethereum:eth", false);
+check("Ethereum on + picked: Lifetime disabled with the Solana reason", ethOn.coin === "ethereum:eth" && !ethOn.plans.find((p) => p.id === "lifetime").enabled);
+const lifeAll = pick(cfgOn, "lifetime", "solana:sol", false);
+check("Ethereum on, Lifetime picked: ETH, USDC (Ethereum) and Bitcoin all 'not for Lifetime'", ["ethereum:eth", "ethereum:usdc", "bitcoin:btc"].every((k) => { const c = lifeAll.coins.find((x) => x.key === k); return !c.enabled && c.tag === "not for Lifetime"; }));
+// every state the page can reach: the picked coin pays the picked plan, and clicking any enabled
+// button never silently changes the other choice
+let sweepOk = true, sweepDetail = "";
+for (const cfg of [cfgOff, cfgLive, cfgOn]) for (const renew of [false, true]) for (const p0 of ["30d", "90d", "365d", "lifetime", null]) for (const c0 of [null, ...cfg.coins.map((c) => c.chain + ":" + c.asset)]) {
+  const s = pick(cfg, p0, c0, renew);
+  const cc = cfg.coins.find((c) => c.chain + ":" + c.asset === s.coin);
+  if (s.canCreate && !(cc && cc.auto_confirm && cc.plans.includes(s.plan))) { sweepOk = false; sweepDetail = `state ${s.plan}/${s.coin}`; }
+  for (const p of s.plans.filter((x) => x.enabled)) { const t = pick(cfg, p.id, s.coin, renew); if (t.coin !== s.coin || t.plan !== p.id) { sweepOk = false; sweepDetail = `plan click ${p.id} moved coin ${s.coin} -> ${t.coin}`; } }
+  for (const c of s.coins.filter((x) => x.enabled)) { const t = pick(cfg, s.plan, c.key, renew); if (t.plan !== s.plan || t.coin !== c.key) { sweepOk = false; sweepDetail = `coin click ${c.key} moved plan ${s.plan} -> ${t.plan}`; } }
+  for (const p of s.plans.filter((x) => !x.enabled)) if (!p.note) { sweepOk = false; sweepDetail = `disabled ${p.id} has no reason`; }
+}
+check("every reachable state agrees, and no enabled click silently switches plan or coin", sweepOk, sweepDetail);
+
 console.log(`\n${passed}/${passed + failed} store unit checks passed.`);
 if (failed) process.exit(1);

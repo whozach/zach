@@ -34,33 +34,53 @@
     state.plan = ps.plan; state.coin = ps.coin;
     var plans = $("plans"), coins = $("coins");
     plans.textContent = ""; coins.textContent = "";
+    plans.removeAttribute("aria-busy"); coins.removeAttribute("aria-busy");
     var notes = [];
+    // a plan the picked coin can't pay, or a coin that can't pay the picked plan, is disabled with
+    // its reason, so no click leads to a refusal (store.js pickState decides both from the config)
     ps.plans.forEach(function (p) {
       var b = el("button", { type: "button", class: "choice", "aria-pressed": String(p.id === state.plan) }, [
-        el("span", { text: p.label }), el("span", { class: "price", text: p.available ? "$" + p.usd : "not on yet" }),
+        el("span", { text: p.label }), el("span", { class: "price", text: p.tag }),
       ]);
-      if (!p.available) { b.disabled = true; notes.push(p.note); }
+      if (!p.enabled) { b.disabled = true; if (p.note) notes.push(p.note); }
       b.addEventListener("click", function () { state.plan = p.id; renderPick(); });
       plans.appendChild(b);
     });
     ps.coins.forEach(function (c) {
       var b = el("button", { type: "button", class: "choice", "aria-pressed": String(c.key === state.coin) }, [
-        el("span", { text: c.label }), el("span", { class: "price", text: c.on ? "" : "not on yet" }),
+        el("span", { text: c.label }), el("span", { class: "price", text: c.tag }),
       ]);
       if (!c.enabled) b.disabled = true;
       b.addEventListener("click", function () { state.coin = c.key; renderPick(); });
       coins.appendChild(b);
     });
     var pn = $("planNote"); pn.textContent = notes.join(" "); pn.hidden = !notes.length;
-    $("coinNote").hidden = state.plan !== "lifetime";
+    var cn = $("coinNote"); cn.textContent = ps.coinNote; cn.hidden = !ps.coinNote;
     $("create").disabled = !ps.canCreate;
     if (!ps.canCreate) showMessage("Payments aren't switched on yet. Check back soon.");
   }
 
+  // Loading state: the spinner and placeholder rows are in the HTML, so they show on first paint.
+  // After 6 s it says it's slow and offers retry; a failed or timed-out load shows why, plus retry.
+  var SLOW_MS = 6000;
+  function setLoad(mode, text) {
+    $("loadState").hidden = mode === "done";
+    $("loadSpin").hidden = mode === "failed";
+    $("loadText").textContent = text || "";
+    $("retryBtn").hidden = !(mode === "slow" || mode === "failed");
+  }
   function loadConfig() {
-    return S.api("GET", "/config").then(function (j) {
-      if (!j.ok) { showMessage(S.errText(j)); return; }
-      state.config = j; showSupport(j.support); renderPick();
+    var done = false;
+    if (!state.config) setLoad("loading", "Loading plans and prices…");
+    var slow = setTimeout(function () { if (!done && !state.config) setLoad("slow", "Still loading. The store is slow to answer."); }, SLOW_MS);
+    return S.api("GET", "/config", undefined, 15000).then(function (j) {
+      done = true; clearTimeout(slow);
+      if (!j.ok) {
+        if (state.config) { showMessage(S.errText(j)); return; }
+        setLoad("failed", (j.error && j.error.code === "timeout") ? "The store didn't answer in time." : S.errText(j));
+        return;
+      }
+      state.config = j; setLoad("done"); showSupport(j.support); renderPick();
     });
   }
 
@@ -179,10 +199,19 @@
     $("create").addEventListener("click", create);
     $("startOver").addEventListener("click", function () { history.replaceState(null, "", location.pathname); location.reload(); });
     if (h.o && h.c) {
+      // an order link: no plan picker, just "Loading your order…" until it's back
+      $("retryBtn").addEventListener("click", function () { location.reload(); });
+      $("pick").hidden = true;
+      setLoad("loading", "Loading your order…");
       state.claim = h.c;
       loadSupportOnly();
-      S.api("GET", "/orders/" + encodeURIComponent(h.o) + "?claim=" + encodeURIComponent(h.c)).then(function (j) {
-        if (!j.ok) { showMessage(j.httpStatus === 404 ? "This order link isn't valid." : S.errText(j)); $("pick").hidden = true; return; }
+      S.api("GET", "/orders/" + encodeURIComponent(h.o) + "?claim=" + encodeURIComponent(h.c), undefined, 15000).then(function (j) {
+        if (!j.ok) {
+          if (j.httpStatus === 404) { setLoad("done"); showMessage("This order link isn't valid."); }
+          else setLoad("failed", (j.error && j.error.code === "timeout") ? "The store didn't answer in time." : S.errText(j));
+          return;
+        }
+        setLoad("done");
         state.order = j.order;
         if (j.order.status === "paid" || j.order.status === "manual") {
           location.replace("/client/dashboard/" + S.hashOf({ o: j.order.id, c: h.c })); return;
@@ -196,6 +225,7 @@
       state.renew = { lic: h.renew, rt: h.rt };
       var rb = $("renewBanner"); rb.textContent = "Renewing an existing key. The time you buy is added to the time it has left."; rb.hidden = false;
     }
+    $("retryBtn").addEventListener("click", function () { if (!state.config) loadConfig(); });
     loadConfig();
   }
 

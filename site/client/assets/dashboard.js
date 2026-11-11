@@ -44,10 +44,25 @@
     } else { $("renewBtn").hidden = true; $("renewNote").hidden = true; }
   }
 
+  function setLoad(mode, text) {
+    $("loadState").hidden = mode === "done";
+    $("loadSpin").hidden = mode === "failed";
+    $("loadText").textContent = text || "";
+    $("retryBtn").hidden = !(mode === "slow" || mode === "failed");
+  }
+
   function byClaim() {
-    S.api("POST", "/license", { order_id: state.o, claim: state.c }).then(function (j) {
-      if (!j.ok) { showMessage(j.httpStatus === 404 ? "This link isn't valid." : S.errText(j)); $("lookup").hidden = false; return; }
-      showMessage(null); render(j);
+    var done = false;
+    setLoad("loading", "Loading your key…");
+    var slow = setTimeout(function () { if (!done) setLoad("slow", "Still loading. The store is slow to answer."); }, 6000);
+    S.api("POST", "/license", { order_id: state.o, claim: state.c }, 15000).then(function (j) {
+      done = true; clearTimeout(slow);
+      if (!j.ok) {
+        if (j.httpStatus === 404) { setLoad("done"); showMessage("This link isn't valid."); $("lookup").hidden = false; return; }
+        setLoad("failed", (j.error && j.error.code === "timeout") ? "The store didn't answer in time." : S.errText(j));
+        return;
+      }
+      setLoad("done"); showMessage(null); render(j);
     });
   }
 
@@ -74,8 +89,9 @@
     $("lookupBtn").addEventListener("click", byKey);
     $("keyInput").addEventListener("keydown", function (e) { if (e.key === "Enter") byKey(); });
     $("ackBtn").addEventListener("click", ack);
+    $("retryBtn").addEventListener("click", byClaim);
     if (h.o && h.c) { state.o = h.o; state.c = h.c; byClaim(); }
-    else $("lookup").hidden = false;
+    else { setLoad("done"); $("lookup").hidden = false; }
   }
 
   init();
