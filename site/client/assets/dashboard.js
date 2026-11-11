@@ -14,12 +14,15 @@
   function render(j) {
     $("info").hidden = false;
     if (!j.license) {
+      $("dlCard").hidden = true;
       $("waitCard").hidden = false;
       $("waitText").textContent = j.order && j.order.status === "expired" ? "This order expired before a payment was seen." : "Payment not confirmed yet.";
       $("backToBuy").href = "/client/buy/" + S.hashOf({ o: state.o, c: state.c });
       return;
     }
     $("waitCard").hidden = true;
+    // the client download and install steps show once there's a license (paid or entered by key)
+    $("dlCard").hidden = false;
     var L = j.license;
     if (j.key) {
       $("keyCard").hidden = false;

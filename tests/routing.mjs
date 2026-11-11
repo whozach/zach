@@ -133,8 +133,9 @@ async function main() {
       record(`${host}: ${m} ${p} answers like any unknown site path (no API hint)`, ok, `${r.status} ${ct(r)}`);
     }
     const storeHost = host !== "zachxbt.boo";
-    const nf404 = ["/client", "/client/", "/client/other", "/client/buy/x", "/client/buyx", "/client/dashboardx", "/client/assets/nope.js", "/client/assets/", "/client/buy/index.htm"];
-    if (!storeHost) nf404.push("/client/buy/", "/client/buy", "/client/dashboard/", "/client/assets/store.js", "/client/assets/qrcodegen.js");
+    const nf404 = ["/client", "/client/", "/client/other", "/client/buy/x", "/client/buyx", "/client/dashboardx", "/client/assets/nope.js", "/client/assets/", "/client/buy/index.htm",
+      "/client/download", "/client/download/", "/client/download/other.zip"];
+    if (!storeHost) nf404.push("/client/buy/", "/client/buy", "/client/dashboard/", "/client/assets/store.js", "/client/assets/qrcodegen.js", "/client/download/crypto-client-0.54.1.zip");
     for (const p of nf404) {
       const r = await get(b, p);
       record(`${host}: GET ${p} is a noindex 404`, r.status === 404 && /noindex/.test(r.h.get("x-robots-tag") || "") && r.body.equals(nfFile), `${r.status} x-robots-tag=${r.h.get("x-robots-tag")}`);
@@ -157,6 +158,12 @@ async function main() {
       for (const f of ["store.css", "store.js", "buy.js", "dashboard.js", "qrcodegen.js"]) {
         const r = await get(b, `/client/assets/${f}`);
         record(`${host}: /client/assets/${f} served byte-for-byte with noindex`, r.status === 200 && r.body.equals(readFileSync(join(SITE, "client/assets", f))) && /noindex/.test(r.h.get("x-robots-tag") || ""), `${r.status}`);
+      }
+      {
+        const zip = readFileSync(join(SITE, "client/download/crypto-client-0.54.1.zip"));
+        const r = await get(b, "/client/download/crypto-client-0.54.1.zip");
+        record(`${host}: /client/download/crypto-client-0.54.1.zip served byte-for-byte as a zip, with noindex`,
+          r.status === 200 && r.body.equals(zip) && /zip/.test(ct(r)) && /noindex/.test(r.h.get("x-robots-tag") || ""), `${r.status} ${ct(r)} ${r.body.length}`);
       }
       const head = await get(b, "/client/buy/", { method: "HEAD" });
       record(`${host}: HEAD /client/buy/ is 200 with noindex`, head.status === 200 && /noindex/.test(head.h.get("x-robots-tag") || ""), `${head.status}`);

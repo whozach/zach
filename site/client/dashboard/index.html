@@ -48,6 +48,18 @@
           <dt>status</dt><dd id="fStatus"></dd>
         </dl>
       </div>
+      <div class="card" id="dlCard" hidden>
+        <h2>download</h2>
+        <a class="btn wide" id="dlBtn" href="/client/download/crypto-client-0.54.1.zip" download>download crypto client 0.54.1</a>
+        <ol class="steps">
+          <li>Download <span class="mono">crypto-client-0.54.1.zip</span> and unzip it anywhere.</li>
+          <li>Start VRChat from Steam and wait for the main menu.</li>
+          <li>Run <span class="mono">bash crypto-client-0.54.1/launch.sh</span> in a terminal.</li>
+          <li>In VRChat press Insert → License (key icon) → paste your key → Activate.</li>
+        </ol>
+        <p class="note">Needs Linux with Steam installed as a Flatpak.</p>
+        <p class="note">sha256 <span class="mono" id="dlSha">5c87cea9914b10e1c8349e61938f9384bfeb34903810d6c4f9b4c21480bec576</span></p>
+      </div>
       <a class="btn wide" id="renewBtn" href="/client/buy/" hidden>renew</a>
       <p class="note" id="renewNote" hidden>Renewing adds the new plan's days to the time you have left.</p>
     </section>

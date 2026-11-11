@@ -91,6 +91,9 @@ export const STORE_CLIENT_FILES = new Set([
   "/client/dashboard", "/client/dashboard/index.html",
   "/client/assets/store.css", "/client/assets/store.js", "/client/assets/buy.js",
   "/client/assets/dashboard.js", "/client/assets/qrcodegen.js",
+  // The client download (public: every build locks without a key). A new release adds its zip here,
+  // in site/client/download/, and in the dashboard's download card.
+  "/client/download/crypto-client-0.54.1.zip",
 ]);
 
 export function isStorePath(path) {
