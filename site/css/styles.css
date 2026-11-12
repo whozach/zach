@@ -501,6 +501,8 @@ html.no-gl main {
   line-height: 1.45;
 }
 .exp-changes li:last-child { border-bottom: 0; }
+a.exp-id { text-decoration: underline; text-decoration-color: rgba(255, 255, 255, 0.25); text-underline-offset: 3px; }
+a.exp-id:hover { color: #fff; }
 .exp-id { grid-row: span 2; color: #8a8a8a; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
 .exp-text { color: #d6d6d6; }
 .exp-stat { color: #7a7a7a; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12px; }

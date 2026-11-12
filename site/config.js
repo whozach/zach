@@ -39,13 +39,16 @@ window.BOO_CONFIG = {
       icon: "/assets/experience/openbot.svg",
       role: "Contributor",
       line: "A desktop app for working with a team of AI agents. I built parts of its Dynamic Island and agent dock for Linux and Hyprland.",
+      // each change links to github.com/<repo>/pull/<number>
+      repo: "nightly-labs/openbot",
       changes: [
-        { id: "#7968", add: 1086, del: 4, files: 8, text: "Show the Dynamic Island and the agent dock as Wayland layers on Hyprland. The main one: they sit above everything, on every workspace, with no snow." },
+        { id: "#7968", add: 1095, del: 4, files: 8, text: "Show the Dynamic Island and the agent dock as Wayland layers on Hyprland. The main one: they sit above everything, on every workspace, with no snow." },
         { id: "#7969", add: 88, del: 6, files: 27, text: "Add Always animate for the Dynamic Island and the agent dock (most files are translations). A new setting, off by default." },
         { id: "#7970", add: 447, del: 36, files: 23, text: "Show channel work and replies on the Dynamic Island." },
         { id: "#7971", add: 235, del: 152, files: 18, text: "Show the app and the status at the top of the open island without a notch." },
         { id: "#7972", add: 12, del: 0, files: 4, text: "Give the desktop agent dock the notch colour of the Dynamic Island." },
-        { id: "#7973", add: 26, del: 2, files: 3, text: "Keep the agent dock's chat link inside the dock band." }
+        { id: "#7973", add: 26, del: 2, files: 3, text: "Keep the agent dock's chat link inside the dock band." },
+        { id: "#7994", add: 93, del: 4, files: 4, text: "Start OpenBot again in place when it moves to XWayland. On NixOS the app often didn't open, because the sandbox ended the new process; now it reuses the same one." }
       ]
     }
   ],

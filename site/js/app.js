@@ -91,7 +91,9 @@ function openChanges(job) {
   const list = document.getElementById("expDialogList");
   list.textContent = "";
   list.append(...changes.map((c) => el("li", null,
-    el("span", { class: "exp-id" }, c.id),
+    job.repo
+      ? el("a", { class: "exp-id", href: `https://github.com/${job.repo}/pull/${c.id.replace(/^#/, "")}`, target: "_blank", rel: "noreferrer" }, c.id)
+      : el("span", { class: "exp-id" }, c.id),
     el("span", { class: "exp-text" }, c.text),
     el("span", { class: "exp-stat" }, `+${n(c.add)} / \u2212${n(c.del)} \u00b7 ${c.files} file${c.files === 1 ? "" : "s"}`))));
   expDialog.classList.remove("is-closing");
