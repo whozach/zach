@@ -90,11 +90,9 @@
         <a class="card showcase" id="showcase" hidden></a>
         <!-- Experience: same spot the main project card had, taller. Entries come from config.js `experience`. -->
         <section class="card experience" id="experience" aria-labelledby="experienceTitle">
-          <div class="experience-head">
-            <img class="experience-logo" src="/assets/experience/x3.webp" alt="" width="40" height="40" decoding="async">
-            <h3 class="experience-title" id="experienceTitle">Experience</h3>
-          </div>
+          <h2 class="experience-title" id="experienceTitle">Experience</h2>
           <ul class="exp-list" id="experienceList"></ul>
+          <p class="exp-more">More will be added soon...</p>
         </section>
         <div class="skills" id="skills"></div>
       </div>
@@ -110,6 +108,20 @@
       </div>
     </section>
   </main>
+
+  <!-- the "lines of code" popup for an Experience entry (filled by app.js) -->
+  <dialog class="exp-dialog" id="expDialog" aria-labelledby="expDialogTitle">
+    <div class="exp-dialog-inner">
+      <div class="exp-dialog-head">
+        <h3 class="exp-dialog-title" id="expDialogTitle"></h3>
+        <button class="exp-dialog-close" type="button" id="expDialogClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <p class="exp-dialog-total" id="expDialogTotal"></p>
+      <ul class="exp-changes" id="expDialogList"></ul>
+    </div>
+  </dialog>
 
   <script src="/config.js"></script>
   <script src="/js/shared.js"></script>

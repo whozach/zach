@@ -67,10 +67,51 @@ if (showcased) {
 /* ---------- experience (config.experience) ---------- */
 
 const n = (x) => x.toLocaleString("en-US");
+const expDialog = document.getElementById("expDialog");
+
+function changeTotals(changes) {
+  return {
+    add: changes.reduce((t, c) => t + c.add, 0),
+    del: changes.reduce((t, c) => t + c.del, 0),
+    files: changes.reduce((t, c) => t + c.files, 0),
+  };
+}
+
+function totalsLine(t, count) {
+  return [el("span", { class: "exp-add" }, `+${n(t.add)}`), el("span", { class: "exp-del" }, `\u2212${n(t.del)}`),
+    el("span", { class: "exp-meta" }, `${n(t.files)} files \u00b7 ${count} changes`)];
+}
+
+// The popup: opens with a scale-and-fade, closes the same way (Esc, the x, or a click outside).
+function openChanges(job) {
+  const changes = job.changes || [];
+  document.getElementById("expDialogTitle").textContent = job.name;
+  const total = document.getElementById("expDialogTotal");
+  total.textContent = ""; total.append(...totalsLine(changeTotals(changes), changes.length));
+  const list = document.getElementById("expDialogList");
+  list.textContent = "";
+  list.append(...changes.map((c) => el("li", null,
+    el("span", { class: "exp-id" }, c.id),
+    el("span", { class: "exp-text" }, c.text),
+    el("span", { class: "exp-stat" }, `+${n(c.add)} / \u2212${n(c.del)} \u00b7 ${c.files} file${c.files === 1 ? "" : "s"}`))));
+  expDialog.classList.remove("is-closing");
+  expDialog.showModal();
+  list.scrollTop = 0;
+}
+
+function closeChanges() {
+  if (!expDialog.open || expDialog.classList.contains("is-closing")) return;
+  if (reducedMotion) { expDialog.close(); return; }
+  expDialog.classList.add("is-closing");
+  setTimeout(() => { expDialog.classList.remove("is-closing"); expDialog.close(); }, 180);
+}
+
+document.getElementById("expDialogClose").addEventListener("click", closeChanges);
+expDialog.addEventListener("cancel", (event) => { event.preventDefault(); closeChanges(); });
+expDialog.addEventListener("click", (event) => { if (event.target === expDialog) closeChanges(); });
+
 document.getElementById("experienceList").append(...(config.experience || []).map((job) => {
   const changes = job.changes || [];
-  const add = changes.reduce((t, c) => t + c.add, 0), del = changes.reduce((t, c) => t + c.del, 0);
-  const files = changes.reduce((t, c) => t + c.files, 0);
   return el("li", { class: "exp-item" },
     el("img", { class: "exp-icon", src: job.icon, alt: "", width: 44, height: 44, decoding: "async" }),
     el("div", { class: "exp-main" },
@@ -78,17 +119,12 @@ document.getElementById("experienceList").append(...(config.experience || []).ma
         el("span", { class: "exp-name" }, job.name),
         job.role && el("span", { class: "exp-role" }, job.role)),
       job.line && el("p", { class: "exp-line" }, job.line),
-      changes.length && el("details", { class: "exp-code" },
-        el("summary", { class: "exp-sum" },
-          el("span", { class: "exp-add" }, `+${n(add)}`),
-          el("span", { class: "exp-del" }, `\u2212${n(del)}`),
-          el("span", { class: "exp-meta" }, `${n(files)} files \u00b7 ${changes.length} changes`),
-          el("span", { class: "exp-hint" }, "lines of code")),
-        el("ul", { class: "exp-changes" }, changes.map((c) =>
-          el("li", null,
-            el("span", { class: "exp-id" }, c.id),
-            el("span", { class: "exp-text" }, c.text),
-            el("span", { class: "exp-stat" }, `+${n(c.add)} / \u2212${n(c.del)} \u00b7 ${c.files} file${c.files === 1 ? "" : "s"}`)))))));
+      changes.length && (() => {
+        const btn = el("button", { class: "exp-sum", type: "button", "aria-haspopup": "dialog" },
+          ...totalsLine(changeTotals(changes), changes.length), el("span", { class: "exp-hint" }, "lines of code"));
+        btn.addEventListener("click", () => openChanges(job));
+        return btn;
+      })()));
 }));
 
 const presence = document.getElementById("presence");

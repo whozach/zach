@@ -35,7 +35,7 @@ window.BOO_CONFIG = {
   // from `changes`; clicking the totals line opens the list of changes, word for word.
   experience: [
     {
-      name: "OpenBot",
+      name: "OpenBOT",
       icon: "/assets/experience/openbot.svg",
       role: "Contributor",
       line: "A desktop app for working with a team of AI agents. I built parts of its Dynamic Island and agent dock for Linux and Hyprland.",

@@ -404,73 +404,100 @@ html.no-gl main {
   gap: 16px;
   margin-top: 14px;
   min-height: 260px;
-  padding: 18px 20px 20px;
+  padding: 20px 20px 18px;
 }
 
-.experience-head { display: flex; align-items: center; gap: 12px; }
-
-.experience-logo {
-  flex: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  object-fit: cover;
-  filter: grayscale(1);
-}
-
-.experience-title {
+/* same look as the "About me" heading, inside the card */
+.experience .experience-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 34px;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
 }
 
 .exp-list { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
-
 .exp-item { display: flex; gap: 14px; align-items: flex-start; }
-
 .exp-icon { flex: none; width: 44px; height: 44px; border-radius: 10px; }
-
 .exp-main { min-width: 0; flex: 1; }
-
 .exp-top { display: flex; align-items: baseline; gap: 10px; }
 .exp-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
 .exp-role { color: #8a8a8a; font-size: 12px; }
-
 .exp-line { margin: 4px 0 10px; color: #a3a3a3; font-size: 13.5px; line-height: 1.5; }
 
-.exp-code { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; background: rgba(0, 0, 0, 0.18); }
+.exp-more { margin: auto 0 0; color: #6f6f6f; font-size: 13px; }
 
 .exp-sum {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px 10px;
+  width: 100%;
   padding: 9px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.18);
+  color: inherit;
   cursor: pointer;
-  list-style: none;
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  font-size: 13px;
-  transition: background 0.2s ease;
+  font: 13px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  text-align: left;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
-.exp-sum::-webkit-details-marker { display: none; }
-.exp-sum:hover { background: rgba(255, 255, 255, 0.04); border-radius: 12px; }
-.exp-sum:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 2px; border-radius: 12px; }
+.exp-sum:hover { background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.16); }
+.exp-sum:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 2px; }
 .exp-add { color: #fff; font-weight: 700; }
 .exp-del { color: #8a8a8a; font-weight: 700; }
 .exp-meta { color: #8a8a8a; }
 .exp-hint { margin-left: auto; color: #6f6f6f; font-family: Rubik, "Segoe UI", sans-serif; font-size: 12px; }
-.exp-hint::after { content: " \25BE"; }
-.exp-code[open] .exp-hint::after { content: " \25B4"; }
+.exp-hint::after { content: " \2197"; }
 
-.exp-changes { margin: 0; padding: 4px 12px 10px; list-style: none; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+/* the popup */
+.exp-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(78vh, 640px);
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 22px;
+  background: #121212;
+  color: #f4f4f4;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+}
+.exp-dialog::backdrop { background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(4px); }
+.exp-dialog[open] { animation: exp-pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.exp-dialog[open]::backdrop { animation: exp-fade 0.22s ease both; }
+.exp-dialog.is-closing { animation: exp-unpop 0.18s ease both; }
+.exp-dialog.is-closing::backdrop { animation: exp-fade 0.18s ease reverse both; }
+@keyframes exp-pop { from { opacity: 0; transform: translateY(12px) scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes exp-unpop { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(0.96); } }
+@keyframes exp-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.exp-dialog-inner { display: flex; flex-direction: column; max-height: inherit; padding: 18px 20px 8px; }
+.exp-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.exp-dialog-title { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.03em; }
+.exp-dialog-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  background: transparent;
+  color: #a3a3a3;
+  cursor: pointer;
+}
+.exp-dialog-close:hover { color: #fff; border-color: rgba(255, 255, 255, 0.25); }
+.exp-dialog-close svg { width: 16px; height: 16px; }
+.exp-dialog-total { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 6px 0 10px; font: 13px ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+
+.exp-changes { margin: 0; padding: 0 0 8px; overflow-y: auto; list-style: none; border-top: 1px solid rgba(255, 255, 255, 0.06); }
 .exp-changes li {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 2px 10px;
-  padding: 8px 0;
+  padding: 10px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.45;
 }
 .exp-changes li:last-child { border-bottom: 0; }
@@ -480,7 +507,12 @@ html.no-gl main {
 
 @media (max-width: 760px) {
   .experience { min-height: 220px; padding: 16px; }
+  .experience .experience-title { font-size: 28px; }
   .exp-hint { margin-left: 0; width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exp-dialog[open], .exp-dialog[open]::backdrop { animation: none; }
 }
 
 /* ---------- about ---------- */
