@@ -396,15 +396,15 @@ html.no-gl main {
   .showcase-photo { height: 96px; }
 }
 
-/* ---------- experience card (About, where the showcase card was; skeleton) ---------- */
+/* ---------- experience card (About, where the showcase card was) ---------- */
 
 .experience {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   margin-top: 14px;
   min-height: 260px;
-  padding: 18px 20px 22px;
+  padding: 18px 20px 20px;
 }
 
 .experience-head { display: flex; align-items: center; gap: 12px; }
@@ -413,9 +413,9 @@ html.no-gl main {
   flex: none;
   width: 40px;
   height: 40px;
-  border: 1px dashed rgba(255, 255, 255, 0.18);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  object-fit: cover;
+  filter: grayscale(1);
 }
 
 .experience-title {
@@ -425,18 +425,62 @@ html.no-gl main {
   letter-spacing: -0.03em;
 }
 
-.experience-body { display: flex; flex-direction: column; gap: 10px; }
+.exp-list { display: flex; flex-direction: column; gap: 14px; margin: 0; padding: 0; list-style: none; }
 
-.experience-line {
-  display: block;
-  height: 12px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
+.exp-item { display: flex; gap: 14px; align-items: flex-start; }
+
+.exp-icon { flex: none; width: 44px; height: 44px; border-radius: 10px; }
+
+.exp-main { min-width: 0; flex: 1; }
+
+.exp-top { display: flex; align-items: baseline; gap: 10px; }
+.exp-name { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+.exp-role { color: #8a8a8a; font-size: 12px; }
+
+.exp-line { margin: 4px 0 10px; color: #a3a3a3; font-size: 13.5px; line-height: 1.5; }
+
+.exp-code { border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; background: rgba(0, 0, 0, 0.18); }
+
+.exp-sum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  list-style: none;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 13px;
+  transition: background 0.2s ease;
 }
-.experience-line.short { width: 55%; }
+.exp-sum::-webkit-details-marker { display: none; }
+.exp-sum:hover { background: rgba(255, 255, 255, 0.04); border-radius: 12px; }
+.exp-sum:focus-visible { outline: 2px solid rgba(255, 255, 255, 0.7); outline-offset: 2px; border-radius: 12px; }
+.exp-add { color: #fff; font-weight: 700; }
+.exp-del { color: #8a8a8a; font-weight: 700; }
+.exp-meta { color: #8a8a8a; }
+.exp-hint { margin-left: auto; color: #6f6f6f; font-family: Rubik, "Segoe UI", sans-serif; font-size: 12px; }
+.exp-hint::after { content: " \25BE"; }
+.exp-code[open] .exp-hint::after { content: " \25B4"; }
+
+.exp-changes { margin: 0; padding: 4px 12px 10px; list-style: none; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.exp-changes li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.exp-changes li:last-child { border-bottom: 0; }
+.exp-id { grid-row: span 2; color: #8a8a8a; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+.exp-text { color: #d6d6d6; }
+.exp-stat { color: #7a7a7a; font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 12px; }
 
 @media (max-width: 760px) {
-  .experience { min-height: 220px; }
+  .experience { min-height: 220px; padding: 16px; }
+  .exp-hint { margin-left: 0; width: 100%; }
 }
 
 /* ---------- about ---------- */

@@ -31,6 +31,25 @@ window.BOO_CONFIG = {
   // Leave "" to hide it. (Off: the Experience card in About took its place.)
   showcase: "",
 
+  // Experience card in About. One entry per project worked on. The +/- and file totals are added up
+  // from `changes`; clicking the totals line opens the list of changes, word for word.
+  experience: [
+    {
+      name: "OpenBot",
+      icon: "/assets/experience/openbot.svg",
+      role: "Contributor",
+      line: "A desktop app for working with a team of AI agents. I built parts of its Dynamic Island and agent dock for Linux and Hyprland.",
+      changes: [
+        { id: "#7968", add: 1086, del: 4, files: 8, text: "Show the Dynamic Island and the agent dock as Wayland layers on Hyprland. The main one: they sit above everything, on every workspace, with no snow." },
+        { id: "#7969", add: 88, del: 6, files: 27, text: "Add Always animate for the Dynamic Island and the agent dock (most files are translations). A new setting, off by default." },
+        { id: "#7970", add: 447, del: 36, files: 23, text: "Show channel work and replies on the Dynamic Island." },
+        { id: "#7971", add: 235, del: 152, files: 18, text: "Show the app and the status at the top of the open island without a notch." },
+        { id: "#7972", add: 12, del: 0, files: 4, text: "Give the desktop agent dock the notch colour of the Dynamic Island." },
+        { id: "#7973", add: 26, del: 2, files: 3, text: "Keep the agent dock's chat link inside the dock band." }
+      ]
+    }
+  ],
+
 
   // Projects, in the order shown. id is the link anchor on /projects/ (#id), so keep it
   // stable once published. The home screen shows the first `featured` of them.
